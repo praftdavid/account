@@ -55,7 +55,7 @@ export async function renderSecuritiesTrades(container) {
         <td class="num">${fmt(t.fee_usd)}</td>
         <td class="c">${t.currency}</td>
         <td class="num">${gainLoss === null || gainLoss === undefined ? '' : fmt(gainLoss)}</td>
-        <td class="c">${t.status === 'journalized' ? '<span class="badge ok">분개완료</span>' : '<span class="badge draft">미분개</span>'}</td>
+        <td class="c">${t.status === 'journalized' ? '<span class="badge ok">분개완료</span>' : t.status === 'ignored' ? '<span class="badge">과거 이관분</span>' : '<span class="badge draft">미분개</span>'}</td>
       </tr>`;
     })
     .join('');
