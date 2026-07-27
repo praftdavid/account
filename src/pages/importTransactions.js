@@ -3,6 +3,7 @@ import { esc, fmt } from '../lib/util.js';
 import { dedupKey } from '../lib/autoJournal.js';
 import { securitiesDedupKey } from '../lib/securitiesJournal.js';
 import { parseKbBank } from '../lib/parsers/kbBank.js';
+import { parseKbBankPdf } from '../lib/parsers/kbBankPdf.js';
 import { parseKiwoomPdf } from '../lib/parsers/kiwoomPdf.js';
 import { parseKiwoomCsv } from '../lib/parsers/kiwoomCsv.js';
 
@@ -16,6 +17,7 @@ function pickParser(account, filename) {
   const ext = filename.toLowerCase().split('.').pop();
   if (account.account_kind === 'bank') {
     if (ext === 'xls' || ext === 'xlsx') return parseKbBank;
+    if (ext === 'pdf') return parseKbBankPdf;
     return null;
   }
   // securities
@@ -88,7 +90,7 @@ export async function renderImportTransactions(container) {
       <select id="impAcct">${acctOptions || '<option>등록된 계좌 없음</option>'}</select>
       <input type="file" id="impFile" accept=".xls,.xlsx,.pdf,.csv">
     </div>
-    <p class="note">국민은행 계좌는 .xls, 키움증권 계좌는 종합거래내역 .pdf 또는 월중 거래내역 .csv 파일을 올려주세요.</p>
+    <p class="note">국민은행 계좌는 .xls 또는 "계좌 거래내역 조회" .pdf, 키움증권 계좌는 종합거래내역 .pdf 또는 월중 거래내역 .csv 파일을 올려주세요.</p>
     ${parseError ? `<p class="err">${esc(parseError)}</p>` : ''}
     <div id="importBody"></div>
   </div>`;
@@ -108,7 +110,7 @@ export async function renderImportTransactions(container) {
     const parser = pickParser(account, file.name);
     if (!parser) {
       parseError = account.account_kind === 'bank'
-        ? '이 계좌(은행)는 .xls/.xlsx만 지원합니다.'
+        ? '이 계좌(은행)는 .xls/.xlsx 또는 "계좌 거래내역 조회" .pdf만 지원합니다.'
         : '이 계좌(증권)는 .pdf(종합거래내역) 또는 .csv(월중 거래내역)만 지원합니다.';
       renderImportTransactions(container);
       return;
