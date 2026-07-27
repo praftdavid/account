@@ -40,7 +40,7 @@ export async function renderLedger(container) {
       <select id="ledgerCat">${catOptions}</select>
       <label>계정과목: </label>
       <select class="acct" id="ledgerAcct">${acctOptions}</select>
-      <span class="note">${account ? `(${account.normal_balance === 'debit' ? '차변' : '대변'} 잔액 기준 · 코드 ${esc(account.account_code)}${isNominal ? ` · ${selectedYear}년 발생액만` : ` · ${selectedYear}년말까지 누적`})` : ''}</span>
+      <span class="note">${account ? `(${account.normal_balance === 'debit' ? '차변' : '대변'} 잔액 기준 · 코드 ${esc(account.account_code)}${isNominal ? ` · ${selectedYear}년 발생액만` : ` · 전기이월 + ${selectedYear}년 발생액`})` : ''}</span>
     </div>
     <div id="ledgerBody"><p class="note">불러오는 중…</p></div>
   </div>`;
@@ -69,15 +69,33 @@ export async function renderLedger(container) {
 
   if (!account) return;
 
-  // 시산표/재무제표와 같은 규칙: 실질계정(자산·부채·자본)은 연도말까지 전체 누적, 명목계정
-  // (수익·비용)은 해당 회계연도 발생분만 — 그래야 원장·시산표·재무제표가 서로 일치한다.
+  // 시산표/재무제표와 원장은 목적이 다르다: 시산표는 "잔액 하나"만 필요해 실질계정(자산·부채·자본)을
+  // 개시분개 이후 전체 누적으로 계산하지만, 원장은 "그 해의 거래 내역"을 나열하는 화면이라 매년 처음부터
+  // 전체 이력을 다시 봐야 하면 못 쓴다. 그래서 실질계정도 선택 연도 이전 누적분은 "전기이월" 한 줄로
+  // 합쳐 보여주고, 상세 행은 명목계정과 동일하게 해당 연도 발생분만 나열한다(더존 등 원장 관행과 동일).
+  const dir = account.normal_balance === 'debit' ? 1 : -1;
+  let openingBalance = 0;
+  if (!isNominal) {
+    const { data: priorLines, error: priorErr } = await supabase
+      .from('journal_lines')
+      .select('debit_amount, credit_amount, journal_entries!inner(entry_date, status)')
+      .eq('account_id', account.account_id)
+      .eq('journal_entries.status', 'posted')
+      .lt('journal_entries.entry_date', `${selectedYear}-01-01`);
+    if (priorErr) {
+      document.getElementById('ledgerBody').innerHTML = `<p class="err">조회 실패: ${esc(priorErr.message)}</p>`;
+      return;
+    }
+    openingBalance = (priorLines ?? []).reduce((s, l) => s + dir * (Number(l.debit_amount) - Number(l.credit_amount)), 0);
+  }
+
   let query = supabase
     .from('journal_lines')
     .select('line_id, debit_amount, credit_amount, journal_entries!inner(entry_date, description, status)')
     .eq('account_id', account.account_id)
     .eq('journal_entries.status', 'posted')
+    .gte('journal_entries.entry_date', `${selectedYear}-01-01`)
     .lte('journal_entries.entry_date', `${selectedYear}-12-31`);
-  if (isNominal) query = query.gte('journal_entries.entry_date', `${selectedYear}-01-01`);
   const { data: lines, error } = await query.order('entry_date', { referencedTable: 'journal_entries' });
 
   const body = document.getElementById('ledgerBody');
@@ -91,8 +109,10 @@ export async function renderLedger(container) {
     return d !== 0 ? d : a.line_id - b.line_id;
   });
 
-  const dir = account.normal_balance === 'debit' ? 1 : -1;
-  let balance = 0;
+  let balance = openingBalance;
+  const openingRow = !isNominal
+    ? `<tr><td class="c">${selectedYear}-01-01</td><td>전기이월</td><td class="num"></td><td class="num"></td><td class="num">${fmt(openingBalance)}</td></tr>`
+    : '';
   const rows = sorted
     .map((l) => {
       const d = Number(l.debit_amount);
@@ -110,6 +130,7 @@ export async function renderLedger(container) {
 
   body.innerHTML = `<div style="overflow-x:auto"><table>
     <tr><th>일자</th><th>적요</th><th>차변</th><th>대변</th><th>잔액</th></tr>
-    ${rows || '<tr><td colspan="5" class="note">거래 내역이 없습니다.</td></tr>'}
+    ${openingRow}
+    ${rows || (isNominal ? '<tr><td colspan="5" class="note">거래 내역이 없습니다.</td></tr>' : '')}
   </table></div>`;
 }

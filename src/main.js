@@ -9,6 +9,7 @@ import { renderIncomeStatement } from './pages/incomeStatement.js';
 import { renderBalanceSheet } from './pages/balanceSheet.js';
 import { renderRetainedEarnings } from './pages/retainedEarnings.js';
 import { renderEquityChanges } from './pages/equityChanges.js';
+import { renderCashFlow } from './pages/cashFlow.js';
 import { renderFinancialAccounts } from './pages/financialAccounts.js';
 import { renderImportTransactions } from './pages/importTransactions.js';
 import { renderReviewTransactions } from './pages/reviewTransactions.js';
@@ -33,6 +34,11 @@ import { esc } from './lib/util.js';
 //     다르다. 범용 사이클이 끝난 뒤 부가 모듈로 맨 뒤에 둔다.
 //  3. 쓰기(액션)와 읽기(조회) 분리 — 분개생성 액션은 전부 "자동분개"/"전표·장부"에 모으고,
 //     "증권관리"는 조회·분석 전용으로 완전히 분리한다.
+//  4. 그룹 "내부" 정렬은 그룹 성격에 따라 다르다 — "처리형" 그룹(자동분개·전표·장부)은 실제 업무가
+//     처리되는 순서(예: 거래 업로드 → 검토·분개 → 잔액 대사 → 주기적 마감 작업)로, "리포트형" 그룹
+//     (재무제표·법인세·증권관리)은 요약(대시보드) 화면을 먼저 두고 그 뒤에 지원 상세 화면을 둔다.
+//     예: "증권 재평가"는 반기/연말 잔고증명서가 왔을 때만 하는 주기적 마감 작업이라, 일상적인
+//     거래 처리·대사가 다 끝난 뒤(잔액 대사 다음)에 오는 게 맞다.
 const GROUPS = [
   [
     'base',
@@ -49,8 +55,8 @@ const GROUPS = [
       ['import', '거래 업로드', renderImportTransactions],
       ['review', '거래 검토·분개', renderReviewTransactions],
       ['secReview', '증권 거래 분개', renderSecuritiesReview],
-      ['secValuation', '증권 재평가', renderSecuritiesValuation],
       ['snapshots', '잔액 대사', renderBalanceSnapshots],
+      ['secValuation', '증권 재평가', renderSecuritiesValuation],
     ],
   ],
   [
@@ -71,6 +77,7 @@ const GROUPS = [
       ['pl', '손익계산서', renderIncomeStatement],
       ['re', '이익잉여금처분계산서', renderRetainedEarnings],
       ['eq', '자본변동표', renderEquityChanges],
+      ['cf', '현금흐름표', renderCashFlow],
     ],
   ],
   [

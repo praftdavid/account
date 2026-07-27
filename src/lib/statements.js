@@ -21,6 +21,17 @@ export function makeFlowFn(accounts, tb, overrides = {}) {
   };
 }
 
+// 기초잔액(=회계연도 시작 시점 잔액)은 별도 개시분개/기초잔액 테이블이 없어 "기말잔액 - 이번
+// 회계연도 중 변동분"으로 역산하는 방식을 쓴다(자본변동표·현금흐름표 공용). rawLines는 asOfDate까지
+// posted된 journal_lines 전체를 화면에서 한 번만 불러와 여러 계정에 재사용하는 걸 전제로 한다.
+// dir은 그 계정의 정상잔액 방향(차변=+1/대변=-1) — 이걸 곱해두면 반환값은 항상 "그 계정 정상잔액
+// 기준 증가액"이 되어, 자산·부채·자본 어느 쪽이든 부호 해석이 일관된다.
+export function changeInPeriod(rawLines, periodStart, accountId, dir) {
+  return rawLines
+    .filter((l) => l.account_id === accountId && periodStart && l.journal_entries.entry_date >= periodStart)
+    .reduce((s, l) => s + dir * (Number(l.debit_amount) - Number(l.credit_amount)), 0);
+}
+
 // 자산·부채·자본(real account)의 "잔액"과 수익·비용(nominal account)의 "당기 발생액"은
 // 둘 다 동일한 "정상잔액 방향으로 부호를 맞춘 debit-credit" 계산이라 flowOf 하나로 겸용한다.
 export function subtreeTotal(accounts, flow, accountId) {

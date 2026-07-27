@@ -2,7 +2,7 @@ import { supabase } from '../lib/supabaseClient.js';
 import { fetchTrialBalance, fetchFiscalYears } from '../lib/data.js';
 import { esc, fmt, todayStr } from '../lib/util.js';
 import { asOfDatePickerHtml, wireAsOfDatePicker } from '../lib/asOfDate.js';
-import { computeIncomeStatement, makeFlowFn } from '../lib/statements.js';
+import { computeIncomeStatement, makeFlowFn, changeInPeriod } from '../lib/statements.js';
 import { exportTableToExcel, exportButtonHtml } from '../lib/exportExcel.js';
 
 const EQUITY_LEAVES = [
@@ -41,13 +41,11 @@ export async function renderEquityChanges(container) {
   const dirOf = (id) => (accById.get(id)?.normal_balance === 'debit' ? 1 : -1);
 
   // 기초잔액(=이번 회계연도 시작 시점 잔액)은 별도 개시분개 없이 "기말잔액 - 이번 회계연도
-  // 중 변동분"으로 역산한다. 실질계정(자본금 등)의 변동분은 이번 회계연도에 posted된
-  // 실제 라인 합계, 미처분이익잉여금은 그 실제 라인 합계 + 누적순이익 중 당기순이익 몫이다.
+  // 중 변동분"으로 역산한다(changeInPeriod, src/lib/statements.js). 실질계정(자본금 등)의
+  // 변동분은 이번 회계연도에 posted된 실제 라인 합계, 미처분이익잉여금은 그 실제 라인 합계 +
+  // 누적순이익 중 당기순이익 몫이다.
   const periodStart = period?.period_start;
-  const changeThisYear = (accountId) =>
-    rawLines
-      .filter((l) => l.account_id === accountId && periodStart && l.journal_entries.entry_date >= periodStart)
-      .reduce((s, l) => s + dirOf(accountId) * (Number(l.debit_amount) - Number(l.credit_amount)), 0);
+  const changeThisYear = (accountId) => changeInPeriod(rawLines, periodStart, accountId, dirOf(accountId));
 
   const currentFlow = makeFlowFn(accounts, tb);
 

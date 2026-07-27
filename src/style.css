@@ -41,9 +41,14 @@ form.entry input,form.entry select{width:100%;padding:7px;border:1px solid var(-
 .badge.bad{background:#fde8e8;color:var(--red);}
 .badge.draft{background:#fff3cd;color:#8a6500;}
 .toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:center;}
+.toolbar select,.toolbar input[type=date],.toolbar input[type=number],.toolbar input[type=text]{
+  padding:7px 9px;border:1px solid var(--bd);border-radius:5px;font-family:inherit;font-size:13px;background:#fff;height:34px;
+}
+.toolbar .btn{height:34px;}
+.toolbar label{font-size:13px;color:#555;}
 .note{font-size:12px;color:#777;margin-top:8px;line-height:1.7;}
 .err{font-size:12px;color:var(--red);margin-top:8px;}
-select.acct{min-width:180px;padding:8px;border:1px solid var(--bd);border-radius:5px;font-family:inherit;}
+select.acct{min-width:180px;}
 .line-row{display:grid;grid-template-columns:1fr 2fr 1fr 1fr 0.6fr 1fr auto;gap:8px;align-items:center;margin-bottom:6px;}
 .line-row .l_side{text-align:center;white-space:nowrap;}
 @media(max-width:700px){
