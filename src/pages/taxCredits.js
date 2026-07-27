@@ -29,8 +29,9 @@ export async function renderTaxCredits(container) {
   if (prepaidAcct) {
     const { data } = await supabase
       .from('journal_lines')
-      .select('entry_id, debit_amount, credit_amount, journal_entries!inner(entry_date, description)')
+      .select('entry_id, debit_amount, credit_amount, journal_entries!inner(entry_date, description, status)')
       .eq('account_id', prepaidAcct.account_id)
+      .eq('journal_entries.status', 'posted')
       .gte('journal_entries.entry_date', `${year}-01-01`)
       .lte('journal_entries.entry_date', `${year}-12-31`);
     glLines = data ?? [];

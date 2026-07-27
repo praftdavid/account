@@ -44,10 +44,19 @@ export function computeSell(lot, txn, fxRate) {
   return { proceedsKrw, costRemoved, gainLoss, newQty, newCostBasis };
 }
 
+// 해외배당 원천세 처리는 법인세법 §57에 따라 세액공제법/손금산입법 중 선택 가능(elective).
+// 이 회사는 미국 원천세율(15%)이 법인세 한계세율(9~19%)보다 높아 세액공제 한도(산출세액×국외원천소득/과세표준)에
+// 걸려 실익이 적으므로, 손금산입법과 결과가 같은 순액법을 쓴다(원천세를 자산으로 잡지 않고 배당수익을
+// 세후 순액으로 인식) — 2025년 세무사가 실제로 처리한 방식과 동일(테슬라·버티브 등 배당수익 332,522원이
+// 미국 원천세 15% 차감 순액으로 잡혀 있고, 선납세금·외국납부세액공제 둘 다 신청 안 함).
+// 국내(원화) 배당·이자의 원천징수세액은 실제 기납부세액으로 전액 공제되므로 계속 선납세금 자산으로 잡는다.
+//
+// 전환 시점: 연간 과세표준(회사 전체, 증권계좌만이 아님)이 커져 평균세율이 15%를 넘어서면
+// (현재 세율 구간 기준 대략 5억원 지점) 세액공제 한도에 여유가 생겨 총액법(세액공제법)으로 바꾸는 게 유리해진다.
 export function computeDividend(txn, fxRate) {
   const grossKrw = Math.round(Number(txn.gross_usd) * fxRate);
   const taxKrw = Math.round(Number(txn.tax_usd) * fxRate);
-  return { grossKrw, taxKrw, netKrw: grossKrw - taxKrw };
+  return { grossKrw, taxKrw, netKrw: grossKrw - taxKrw, isForeign: txn.currency !== 'KRW' };
 }
 
 // 분개 2줄: 차)매도가능증권(원가) / 대)GL계정(같은 금액)
@@ -69,8 +78,15 @@ export function buildSellLines({ proceedsKrw, costRemoved, gainLoss }, securitie
   return lines;
 }
 
-// 분개: 차)GL계정(실수령) + 차)선납세금(원천세, 있으면) / 대)금융영업수익(총배당금)
-export function buildDividendLines({ grossKrw, taxKrw, netKrw }, glAccountId, taxAccountId, incomeAccountId, segment = 'invest') {
+// 분개: 해외(순액법) — 차)GL계정(순액) / 대)금융영업수익(순액), 원천세는 자산화하지 않음.
+//       국내 — 차)GL계정(실수령) + 차)선납세금(원천세, 있으면) / 대)금융영업수익(총배당금), 기존과 동일.
+export function buildDividendLines({ grossKrw, taxKrw, netKrw, isForeign }, glAccountId, taxAccountId, incomeAccountId, segment = 'invest') {
+  if (isForeign) {
+    return [
+      { account_id: glAccountId, debit_amount: netKrw, credit_amount: 0, segment },
+      { account_id: incomeAccountId, debit_amount: 0, credit_amount: netKrw, segment },
+    ];
+  }
   const lines = [{ account_id: glAccountId, debit_amount: netKrw, credit_amount: 0, segment }];
   if (taxKrw > 0) lines.push({ account_id: taxAccountId, debit_amount: taxKrw, credit_amount: 0, segment });
   lines.push({ account_id: incomeAccountId, debit_amount: 0, credit_amount: grossKrw, segment });

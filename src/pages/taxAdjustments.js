@@ -138,8 +138,9 @@ async function renderSuggestion(el, fiscalYear, adjustments, container) {
 
   const { data: allLines } = await supabase
     .from('journal_lines')
-    .select('debit_amount, credit_amount, journal_entries!inner(entry_date)')
+    .select('debit_amount, credit_amount, journal_entries!inner(entry_date, status)')
     .eq('account_id', acct.account_id)
+    .eq('journal_entries.status', 'posted')
     .lte('journal_entries.entry_date', `${fiscalYear}-12-31`);
   const lines = allLines ?? [];
   const ociClosing = lines.reduce((s, l) => s + Number(l.credit_amount) - Number(l.debit_amount), 0);

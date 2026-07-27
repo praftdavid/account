@@ -60,7 +60,7 @@ export async function renderSecuritiesPositions(container) {
 
   // 재무상태표 대사용 GL 잔액. 스냅샷 기준일이면 그 시점까지, 현재 보유면 전체 누적.
   const glQuery = (accountId) => {
-    let q = supabase.from('journal_lines').select('debit_amount, credit_amount, journal_entries!inner(entry_date)').eq('account_id', accountId);
+    let q = supabase.from('journal_lines').select('debit_amount, credit_amount, journal_entries!inner(entry_date, status)').eq('account_id', accountId).eq('journal_entries.status', 'posted');
     if (isSnapshot) q = q.lte('journal_entries.entry_date', selectedDate);
     return q;
   };
