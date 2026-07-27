@@ -24,8 +24,14 @@ import { renderTaxReserves } from './pages/taxReserves.js';
 import { renderTaxCredits } from './pages/taxCredits.js';
 import { esc } from './lib/util.js';
 
-// 더존 등 실무 회계프로그램 관례: 계정과목(기초정보) / 전표·장부(일상 처리) / 재무제표(공식 보고서) 3단 분류.
-// "증권관리"는 조회·분석 전용(분개생성 없음) — 분개생성 액션은 전부 "자동분개" 그룹에 모은다.
+// 메뉴 배치 원칙:
+//  1. 회계 데이터 흐름 순서 — 기초정보(설정) → 자동분개(입력 자동화) → 전표·장부(기록) →
+//     재무제표(보고) → 법인세(신고). 상류에서 하류로 흘러가는 순서 그대로 배치한다.
+//  2. 범용 사이클 vs 도메인 특화 모듈 분리 — 위 5개 그룹은 어떤 사업이든 공통인 "범용 회계 사이클"이고,
+//     "증권관리"는 이 회사 투자 부문 전용 분석 모듈(향후 수익률분석·리밸런싱까지 확장 예정)이라 성격이
+//     다르다. 범용 사이클이 끝난 뒤 부가 모듈로 맨 뒤에 둔다.
+//  3. 쓰기(액션)와 읽기(조회) 분리 — 분개생성 액션은 전부 "자동분개"/"전표·장부"에 모으고,
+//     "증권관리"는 조회·분석 전용으로 완전히 분리한다.
 const GROUPS = [
   [
     'base',
@@ -56,16 +62,6 @@ const GROUPS = [
     ],
   ],
   [
-    'securities',
-    '증권관리',
-    [
-      ['secPositions', '보유종목 현황', renderSecuritiesPositions],
-      ['secTrades', '매매내역', renderSecuritiesTrades],
-      ['secDividends', '배당금내역', renderSecuritiesDividends],
-      ['secFx', '환전내역', renderSecuritiesFx],
-    ],
-  ],
-  [
     'stmt',
     '재무제표',
     [
@@ -83,6 +79,16 @@ const GROUPS = [
       ['taxAdj', '소득금액조정합계표', renderTaxAdjustments],
       ['taxRes', '유보 관리', renderTaxReserves],
       ['taxCr', '기납부세액 · 세액공제', renderTaxCredits],
+    ],
+  ],
+  [
+    'securities',
+    '증권관리',
+    [
+      ['secPositions', '보유종목 현황', renderSecuritiesPositions],
+      ['secTrades', '매매내역', renderSecuritiesTrades],
+      ['secDividends', '배당금내역', renderSecuritiesDividends],
+      ['secFx', '환전내역', renderSecuritiesFx],
     ],
   ],
 ];
