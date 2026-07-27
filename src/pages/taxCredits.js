@@ -29,7 +29,7 @@ export async function renderTaxCredits(container) {
   if (prepaidAcct) {
     const { data } = await supabase
       .from('journal_lines')
-      .select('debit_amount, credit_amount, journal_entries!inner(entry_date, description)')
+      .select('entry_id, debit_amount, credit_amount, journal_entries!inner(entry_date, description)')
       .eq('account_id', prepaidAcct.account_id)
       .gte('journal_entries.entry_date', `${year}-01-01`)
       .lte('journal_entries.entry_date', `${year}-12-31`);
@@ -38,6 +38,41 @@ export async function renderTaxCredits(container) {
   const glTotal = glLines.reduce((s, l) => s + Number(l.debit_amount) - Number(l.credit_amount), 0);
 
   const list = credits ?? [];
+
+  // 미등록분 자동 제안: 적요에 "배당"이 있으면 해외 배당 원천징수(외국납부세액, 세액공제·한도 있음)로,
+  // 그 외(예탁금이용료 등 국내 이자 원천징수)는 원천납부(기납부세액, 한도 없음)로 분류한다.
+  // 이미 등록된 금액과 정확히 같은 액수가 있으면 "이미 등록됨"으로 보고 건너뛴다(단순 금액 대사 — 여러 건이
+  // 우연히 같은 금액이면 놓칠 수 있지만, 그 경우에도 위쪽 '차이' 합계 대사가 잡아준다).
+  const remaining = list.map((c) => Number(c.amount));
+  const consume = (amt) => {
+    const i = remaining.findIndex((r) => Math.abs(r - amt) < 1);
+    if (i === -1) return false;
+    remaining.splice(i, 1);
+    return true;
+  };
+  let entryLinesByEntry = null;
+  const suggestions = [];
+  for (const l of glLines) {
+    const amt = Number(l.debit_amount) - Number(l.credit_amount);
+    if (amt <= 0) continue;
+    if (consume(amt)) continue; // 이미 등록됨
+    const desc = l.journal_entries.description ?? '';
+    const isDividend = desc.includes('배당');
+    let foreignIncome = null;
+    if (isDividend) {
+      if (!entryLinesByEntry) {
+        const { data: allLines } = await supabase.from('journal_lines').select('entry_id, account_id, credit_amount').in('entry_id', glLines.map((x) => x.entry_id));
+        entryLinesByEntry = {};
+        for (const el of allLines ?? []) {
+          entryLinesByEntry[el.entry_id] = entryLinesByEntry[el.entry_id] ?? [];
+          entryLinesByEntry[el.entry_id].push(el);
+        }
+      }
+      const siblings = entryLinesByEntry[l.entry_id] ?? [];
+      foreignIncome = Math.max(0, ...siblings.map((el) => Number(el.credit_amount)));
+    }
+    suggestions.push({ date: l.journal_entries.entry_date, desc, amount: amt, type: isDividend ? '외국납부세액' : '원천납부', foreignIncome: isDividend ? foreignIncome : null });
+  }
   const prepaidTotal = list.filter((c) => PREPAID_TYPES.includes(c.credit_type)).reduce((s, c) => s + Number(c.amount), 0);
   const creditTotal = list.filter((c) => !PREPAID_TYPES.includes(c.credit_type)).reduce((s, c) => s + Number(c.amount), 0);
   const registered = prepaidTotal + creditTotal;
@@ -84,6 +119,18 @@ export async function renderTaxCredits(container) {
       ${rows || '<tr><td colspan="6" class="note">등록된 내역이 없습니다.</td></tr>'}
       ${list.length ? `<tr><td><b>합계</b></td><td class="num"><b>${fmt(registered)}</b></td><td colspan="4"></td></tr>` : ''}
     </table></div>
+
+    ${suggestions.length ? `
+    <div class="card" style="background:#fff8e1;border-color:#e0c060;margin-top:16px">
+      <p><b>확인 필요:</b> 선납세금 장부에 있는데 등록되지 않은 항목 ${suggestions.length}건을 찾았습니다. 적요를 보고 아래처럼 분류를 제안합니다 — 배당이면 해외 배당 원천징수(외국납부세액), 그 외면 국내 원천징수(원천납부)로 봤습니다.</p>
+      <table style="margin:8px 0">
+        <tr><th>일자</th><th>적요</th><th>금액</th><th>제안 구분</th><th>국외원천소득</th></tr>
+        ${suggestions.map((s) => `<tr><td class="c">${esc(s.date)}</td><td>${esc(s.desc)}</td><td class="num">${fmt(s.amount)}</td><td class="c">${s.type}</td><td class="num">${s.foreignIncome ? fmt(s.foreignIncome) : '–'}</td></tr>`).join('')}
+      </table>
+      <button class="btn" id="crAutoAdd">전부 등록</button>
+      <span class="note">분류가 틀렸으면 등록 후 아래 표에서 삭제하고 직접 다시 입력하세요.</span>
+    </div>
+    ` : ''}
 
     <h3 style="margin-top:20px">추가</h3>
     <form class="toolbar" id="crForm">
@@ -137,6 +184,19 @@ export async function renderTaxCredits(container) {
       errEl.textContent = '저장 실패: ' + insErr.message;
       return;
     }
+    renderTaxCredits(container);
+  });
+
+  document.getElementById('crAutoAdd')?.addEventListener('click', async () => {
+    const rows = suggestions.map((s) => ({
+      fiscal_year: year,
+      credit_type: s.type,
+      amount: s.amount,
+      foreign_income: s.foreignIncome || null,
+      paid_date: s.date,
+      memo: `자동 제안(적요: ${s.desc})`,
+    }));
+    await supabase.from('tax_credits').insert(rows);
     renderTaxCredits(container);
   });
 
