@@ -1,0 +1,63 @@
+:root{--navy:#1f3864;--blue:#2f5597;--lblue:#d9e2f2;--bg:#f5f6fa;--bd:#d8dce6;--red:#c00000;--green:#1a7a3c;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Malgun Gothic','Apple SD Gothic Neo',sans-serif;background:var(--bg);color:#222;font-size:14px;}
+header{background:var(--navy);color:#fff;padding:14px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+header h1{font-size:18px;}
+header .sub{font-size:12px;opacity:.85;margin-left:auto;display:flex;align-items:center;gap:10px;}
+nav{background:#fff;display:flex;flex-direction:column;}
+nav .nav-row{display:flex;flex-wrap:wrap;padding:0 12px;}
+nav button{border:none;background:none;padding:12px 18px;font-size:14px;cursor:pointer;border-bottom:3px solid transparent;font-family:inherit;}
+nav button.on{border-bottom-color:var(--navy);font-weight:bold;color:var(--navy);}
+nav .nav-groups{background:var(--lblue);}
+nav .nav-groups button{padding:7px 16px;font-size:12px;color:var(--navy);}
+nav .nav-groups button.on{background:#fff;border-bottom-color:var(--navy);}
+nav .nav-items{border-bottom:2px solid var(--navy);}
+main{padding:20px;max-width:1200px;margin:0 auto;}
+.card{background:#fff;border:1px solid var(--bd);border-radius:8px;padding:20px;margin-bottom:18px;}
+.card h2{font-size:16px;color:var(--navy);margin-bottom:14px;}
+table{border-collapse:collapse;width:100%;font-size:13px;}
+th{background:var(--navy);color:#fff;padding:7px 9px;font-weight:600;white-space:nowrap;}
+td{border:1px solid var(--bd);padding:6px 9px;}
+tr:nth-child(even) td{background:#fafbfd;}
+tr.inactive td{opacity:.45;}
+td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;}
+td.c{text-align:center;white-space:nowrap;}
+tr.sec td{background:var(--lblue);font-weight:bold;}
+tr.tot td{background:var(--lblue);font-weight:bold;border-top:2px solid var(--navy);}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:18px;}
+.kpi{background:#fff;border:1px solid var(--bd);border-left:5px solid var(--blue);border-radius:8px;padding:14px 18px;}
+.kpi .t{font-size:12px;color:#666;}
+.kpi .v{font-size:20px;font-weight:bold;color:var(--navy);margin-top:4px;font-variant-numeric:tabular-nums;}
+form.entry{display:grid;grid-template-columns:repeat(12,1fr);gap:10px;align-items:end;}
+form.entry label{font-size:12px;color:#555;display:block;margin-bottom:3px;}
+form.entry input,form.entry select{width:100%;padding:7px;border:1px solid var(--bd);border-radius:5px;font-family:inherit;font-size:13px;}
+.btn{background:var(--navy);color:#fff;border:none;padding:9px 18px;border-radius:5px;cursor:pointer;font-family:inherit;font-size:13px;}
+.btn:disabled{background:#9aa5b8;cursor:not-allowed;}
+.btn.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy);}
+.btn.danger{background:var(--red);}
+.btn.sm{padding:4px 10px;font-size:12px;}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;}
+.badge.ok{background:#e2f3e8;color:var(--green);}
+.badge.bad{background:#fde8e8;color:var(--red);}
+.badge.draft{background:#fff3cd;color:#8a6500;}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:center;}
+.note{font-size:12px;color:#777;margin-top:8px;line-height:1.7;}
+.err{font-size:12px;color:var(--red);margin-top:8px;}
+select.acct{min-width:180px;padding:8px;border:1px solid var(--bd);border-radius:5px;font-family:inherit;}
+.line-row{display:grid;grid-template-columns:1fr 2fr 1fr 1fr 0.6fr 1fr auto;gap:8px;align-items:center;margin-bottom:6px;}
+.line-row .l_side{text-align:center;white-space:nowrap;}
+@media(max-width:700px){
+  .line-row{grid-template-columns:1fr;gap:6px;background:#fafbfd;border:1px solid var(--bd);border-radius:6px;padding:10px;margin-bottom:10px;}
+  .line-row .l_side{text-align:left;}
+  .line-row .removeLine{width:100%;}
+}
+.login-wrap{display:flex;align-items:center;justify-content:center;min-height:80vh;}
+.login-card{background:#fff;border:1px solid var(--bd);border-radius:8px;padding:32px;width:320px;}
+.login-card h2{color:var(--navy);margin-bottom:18px;}
+.login-card label{font-size:12px;color:#555;display:block;margin:10px 0 4px;}
+.login-card input{width:100%;padding:8px;border:1px solid var(--bd);border-radius:5px;font-family:inherit;}
+.login-card .btn{width:100%;margin-top:16px;}
+@media(max-width:800px){form.entry{grid-template-columns:repeat(2,1fr);}}
+.bs-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+.bs-col table{width:100%;}
+@media(max-width:760px){.bs-grid{grid-template-columns:1fr;}}

@@ -1,0 +1,1141 @@
+-- =====================================================================
+-- 프래프트 관리회계 앱 — 2025년(제1기) 실제 분개 이관 (자동 생성)
+-- 생성 스크립트: scripts/generate-2025-migration.mjs
+-- 소스: [주식회사 프래프트]분개장.xls (세무사 결산 결과물, 2025-01-01~2025-12-31)
+-- 이관: 실거래 100건. 집합손익 대체(수익/비용→손익, 손익→미처분이익잉여금,
+--       미처분→이월이익잉여금) 4건은 마감 기계적 절차라 제외 — 당기순이익은
+--       앱에서 posted 라인으로부터 실시간 계산하므로 별도 마감 분개 불필요.
+--       상품매출원가 대체(재고 실사 기준 원가 인식)는 실거래이므로 포함.
+-- 검증: 총 차변 = 총 대변 = 176,884,121원, 계정별 잔액이 공식
+--       재무상태표(자산총계 68,036,255 등)·손익계산서(당기순이익 533,014)와 정확히 일치.
+-- 참고: 분개장 메모에 "배당금수익"이 등장하지만 실제로는 금융매출 계정에
+--       순액으로 반영되어 있음(회사의 실현손익 처리 정책과 일치) — 신규 계정 불필요.
+-- 실행 순서: 04_migrate_legacy_data.sql 이후 실행. 04번이 만든 요약 개시분개
+--       (entry_no='OPEN-2025')는 이 파일의 실거래로 대체되므로 먼저 삭제한다.
+-- =====================================================================
+
+DELETE FROM journal_entries WHERE entry_no = 'OPEN-2025';
+
+WITH e_n1 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0101-00001', DATE '2025-01-01', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[대표자] 자본금', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '31000'), 0, 25000000, 'common' FROM e_n1
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '21003'), 25000000, 0, 'common' FROM e_n1;
+
+WITH e_n2 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0118-00001', DATE '2025-01-18', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[대표자] 대표자 가수금', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 500000, 0, 'common' FROM e_n2
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '21003'), 0, 500000, 'common' FROM e_n2;
+
+WITH e_n3 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0118-00002', DATE '2025-01-18', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[KB국민은행 754100] 공동인증서발급수수료', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '61002'), 4400, 0, 'common' FROM e_n3
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 0, 4400, 'common' FROM e_n3;
+
+WITH e_n4 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0118-00003', DATE '2025-01-18', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[KB국민은행 754100] 공동인증서발급수수료', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '61002'), 4400, 0, 'common' FROM e_n4
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 0, 4400, 'common' FROM e_n4;
+
+WITH e_n5 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0126-50001', DATE '2025-01-26', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[KB국민은행 754100] （주）이마트', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11105'), 4945, 0, 'common' FROM e_n5
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11201'), 49455, 0, 'commerce' FROM e_n5
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 0, 54400, 'common' FROM e_n5;
+
+WITH e_n6 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0131-50001', DATE '2025-01-31', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[네이버파이낸셜] 네이버페이 수수료', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11105'), 229, 0, 'common' FROM e_n6
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '61002'), 2293, 0, 'common' FROM e_n6
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11102'), 0, 2522, 'commerce' FROM e_n6;
+
+WITH e_n7 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0131-50002', DATE '2025-01-31', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[현금영수증] 현금영수증', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11102'), 18900, 0, 'commerce' FROM e_n7
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '21002'), 0, 1718, 'common' FROM e_n7
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '41001'), 0, 17182, 'commerce' FROM e_n7;
+
+WITH e_n8 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0131-50003', DATE '2025-01-31', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[네이버파이낸셜] 네이버매출', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11102'), 50700, 0, 'commerce' FROM e_n8
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '21002'), 0, 4609, 'common' FROM e_n8
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '41001'), 0, 46091, 'commerce' FROM e_n8;
+
+WITH e_n9 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0201-50001', DATE '2025-02-01', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[KB국민은행 754100] （주）이마트', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11105'), 5220, 0, 'common' FROM e_n9
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11201'), 52200, 0, 'commerce' FROM e_n9
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 0, 57420, 'common' FROM e_n9;
+
+WITH e_n10 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0201-50002', DATE '2025-02-01', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[KB국민은행 754100] （주）이마트', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11105'), 4990, 0, 'common' FROM e_n10
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11201'), 49910, 0, 'commerce' FROM e_n10
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 0, 54900, 'common' FROM e_n10;
+
+WITH e_n11 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0206-00001', DATE '2025-02-06', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[네이버파이낸셜] 스마트스토어비즈', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 191784, 0, 'common' FROM e_n11
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11102'), 0, 191784, 'commerce' FROM e_n11;
+
+WITH e_n12 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0218-00001', DATE '2025-02-18', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[KB국민은행 754100] (주)코스콤', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '21001'), 66000, 0, 'common' FROM e_n12
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 0, 66000, 'common' FROM e_n12;
+
+WITH e_n13 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0218-00002', DATE '2025-02-18', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[대표자] 가수금', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 19500000, 0, 'common' FROM e_n13
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '21003'), 0, 19500000, 'common' FROM e_n13;
+
+WITH e_n14 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0218-00003', DATE '2025-02-18', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[대표자] 가수금', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 20000000, 0, 'common' FROM e_n14
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '21003'), 0, 20000000, 'common' FROM e_n14;
+
+WITH e_n15 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0218-50001', DATE '2025-02-18', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[(주)코스콤] 인증서발급', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11105'), 6000, 0, 'common' FROM e_n15
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '61002'), 60000, 0, 'common' FROM e_n15
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '21001'), 0, 66000, 'common' FROM e_n15;
+
+WITH e_n16 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0220-00001', DATE '2025-02-20', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 9360073, 0, 'invest' FROM e_n16
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 4346697, 0, 'invest' FROM e_n16
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 952258, 0, 'invest' FROM e_n16
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 4405767, 0, 'invest' FROM e_n16
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 0, 19064795, 'common' FROM e_n16;
+
+WITH e_n17 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0221-00001', DATE '2025-02-21', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[테슬라] 5주*$347.21*@1,436.8', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 2496165, 0, 'invest' FROM e_n17
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 0, 2496165, 'common' FROM e_n17;
+
+WITH e_n18 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0225-00001', DATE '2025-02-25', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '4주*$303.78*@1,430.5', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 1545287, 0, 'invest' FROM e_n18
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 1739433, 0, 'invest' FROM e_n18
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 0, 3284720, 'common' FROM e_n18;
+
+WITH e_n19 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0227-00001', DATE '2025-02-27', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[테슬라] 2주*$292.13*@1,450.9', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 848260, 0, 'invest' FROM e_n19
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 0, 848260, 'common' FROM e_n19;
+
+WITH e_n20 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0228-50001', DATE '2025-02-28', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[네이버파이낸셜] 네이버페이 수수료', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11105'), 427, 0, 'common' FROM e_n20
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '61002'), 4267, 0, 'common' FROM e_n20
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11102'), 0, 4694, 'commerce' FROM e_n20;
+
+WITH e_n21 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0228-50002', DATE '2025-02-28', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[네이버파이낸셜] 네이버매출', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11102'), 129400, 0, 'commerce' FROM e_n21
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '21002'), 0, 11763, 'common' FROM e_n21
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '41001'), 0, 117637, 'commerce' FROM e_n21;
+
+WITH e_n22 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0310-00001', DATE '2025-03-10', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '2주*$222.21*@1,458.0', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 1402571, 0, 'invest' FROM e_n22
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 648425, 0, 'invest' FROM e_n22
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 0, 2050996, 'common' FROM e_n22;
+
+WITH e_n23 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0311-00001', DATE '2025-03-11', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '1주*$230.04*@1,452.0', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 697734, 0, 'invest' FROM e_n23
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 716044, 0, 'invest' FROM e_n23
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 650428, 0, 'invest' FROM e_n23
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 334253, 0, 'invest' FROM e_n23
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 0, 2398459, 'common' FROM e_n23;
+
+WITH e_n24 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0312-00001', DATE '2025-03-12', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[테슬라] 1주*$245.38*@1,449.8', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 370803, 0, 'invest' FROM e_n24
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 355986, 0, 'invest' FROM e_n24
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 0, 726789, 'common' FROM e_n24;
+
+WITH e_n25 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0314-00001', DATE '2025-03-14', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[테슬라] 1주*$248.03*@1,451.1', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 419951, 0, 'invest' FROM e_n25
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 279411, 0, 'invest' FROM e_n25
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 360296, 0, 'invest' FROM e_n25
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 360166, 0, 'invest' FROM e_n25
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 0, 1419824, 'common' FROM e_n25;
+
+WITH e_n26 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0327-00001', DATE '2025-03-27', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[네이버파이낸셜] 스마트스토어정산', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 14360, 0, 'common' FROM e_n26
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11102'), 0, 14360, 'commerce' FROM e_n26;
+
+WITH e_n27 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0331-00001', DATE '2025-03-31', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[세무서] 부가세 예수금과 상계', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '21002'), 19444, 0, 'common' FROM e_n27
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11105'), 0, 21860, 'common' FROM e_n27
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11103'), 2415, 0, 'common' FROM e_n27
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '81002'), 1, 0, 'common' FROM e_n27;
+
+WITH e_n28 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0331-50001', DATE '2025-03-31', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[네이버파이낸셜] 네이버페이 수수료', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11105'), 49, 0, 'common' FROM e_n28
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '61002'), 491, 0, 'common' FROM e_n28
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11102'), 0, 540, 'commerce' FROM e_n28;
+
+WITH e_n29 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0331-50002', DATE '2025-03-31', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[네이버파이낸셜] 네이버매출', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11102'), 14900, 0, 'commerce' FROM e_n29
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '21002'), 0, 1354, 'common' FROM e_n29
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '41001'), 0, 13546, 'commerce' FROM e_n29;
+
+WITH e_n30 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0403-00001', DATE '2025-04-03', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 363493, 0, 'invest' FROM e_n30
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 131519, 0, 'invest' FROM e_n30
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 391045, 0, 'invest' FROM e_n30
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 0, 886057, 'common' FROM e_n30;
+
+WITH e_n31 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0408-00001', DATE '2025-04-08', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '2주*$243.60*@1,487.1', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 539769, 0, 'invest' FROM e_n31
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 725016, 0, 'invest' FROM e_n31
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 0, 1264785, 'common' FROM e_n31;
+
+WITH e_n32 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0410-00001', DATE '2025-04-10', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '1주*$528.07*@1,453.9', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 141929, 0, 'invest' FROM e_n32
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 768279, 0, 'invest' FROM e_n32
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 0, 910208, 'common' FROM e_n32;
+
+WITH e_n33 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0413-00001', DATE '2025-04-13', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[키움증권 2843-10] 예탁금이용료', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 1662, 0, 'common' FROM e_n33
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '71001'), 0, 1662, 'common' FROM e_n33;
+
+WITH e_n34 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0413-00002', DATE '2025-04-13', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[키움증권 2843-10] 예탁금이용료', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 3067, 0, 'common' FROM e_n34
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '71001'), 0, 3067, 'common' FROM e_n34;
+
+WITH e_n35 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0422-00001', DATE '2025-04-22', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[대표자] 가수금', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 3000000, 0, 'common' FROM e_n35
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '21003'), 0, 3000000, 'common' FROM e_n35;
+
+WITH e_n36 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0422-00002', DATE '2025-04-22', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 673925, 0, 'invest' FROM e_n36
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 3303135, 0, 'invest' FROM e_n36
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 746963, 0, 'invest' FROM e_n36
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 0, 4724023, 'common' FROM e_n36;
+
+WITH e_n37 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0430-00001', DATE '2025-04-30', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '1주*$552.89*@1,424.8', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 423008, 0, 'invest' FROM e_n37
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 788271, 0, 'invest' FROM e_n37
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 0, 1211279, 'common' FROM e_n37;
+
+WITH e_n38 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0508-00001', DATE '2025-05-08', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[대표자] 가수금', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 1000000, 0, 'common' FROM e_n38
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '21003'), 0, 1000000, 'common' FROM e_n38;
+
+WITH e_n39 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0508-00002', DATE '2025-05-08', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '5주*$94.10*@1,405.2', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 661610, 0, 'invest' FROM e_n39
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 0, 661610, 'common' FROM e_n39;
+
+WITH e_n40 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0614-00001', DATE '2025-06-14', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[KB국민은행 754100] 이자세금:0원', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 185, 0, 'common' FROM e_n40
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '71001'), 0, 185, 'common' FROM e_n40;
+
+WITH e_n41 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0713-00001', DATE '2025-07-13', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[키움증권 2843-10] 예탁금이용료', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 343, 0, 'common' FROM e_n41
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '71001'), 0, 343, 'common' FROM e_n41;
+
+WITH e_n42 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0721-00001', DATE '2025-07-21', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '3주*$127.00*@1,382.8', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 423175, 0, 'invest' FROM e_n42
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 874739, 0, 'invest' FROM e_n42
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 527203, 0, 'invest' FROM e_n42
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 0, 2702967, 'common' FROM e_n42
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 877850, 0, 'invest' FROM e_n42;
+
+WITH e_n43 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0721-00002', DATE '2025-07-21', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[포티넷] FTNT 10주 매도*이동평균₩141,356', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 0, 1413565, 'invest' FROM e_n43
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 1413565, 0, 'common' FROM e_n43;
+
+WITH e_n44 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0730-00001', DATE '2025-07-30', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[버티브홀딩스] 1주*$149.54*@1,393.5', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 208529, 0, 'invest' FROM e_n44
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 0, 208529, 'common' FROM e_n44;
+
+WITH e_n45 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0731-00001', DATE '2025-07-31', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[버티브홀딩스] 3주*$148.51*@1,393.3', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 621198, 0, 'invest' FROM e_n45
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 0, 621198, 'common' FROM e_n45;
+
+WITH e_n46 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0731-00002', DATE '2025-07-31', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[포티넷] FTNT 5주 매도*이동평균₩141,356', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 0, 706782, 'invest' FROM e_n46
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 706782, 0, 'common' FROM e_n46;
+
+WITH e_n47 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0806-00001', DATE '2025-08-06', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[세무서] 단수차액', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 2410, 0, 'common' FROM e_n47
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11103'), 0, 2415, 'common' FROM e_n47
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '81002'), 5, 0, 'common' FROM e_n47;
+
+WITH e_n48 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0807-00001', DATE '2025-08-07', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '3주*$139.26*@1,383.7', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 99887, 0, 'invest' FROM e_n48
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 990016, 0, 'invest' FROM e_n48
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 396006, 0, 'invest' FROM e_n48
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 498882, 0, 'invest' FROM e_n48
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 578471, 0, 'invest' FROM e_n48
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 0, 2563262, 'common' FROM e_n48;
+
+WITH e_n49 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0808-00001', DATE '2025-08-08', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[대표자] 가수금', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 10000000, 0, 'common' FROM e_n49
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '21003'), 0, 10000000, 'common' FROM e_n49;
+
+WITH e_n50 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0819-00001', DATE '2025-08-19', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[KB국민은행 754100] 법인주민세', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '61001'), 55000, 0, 'common' FROM e_n50
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 0, 55000, 'common' FROM e_n50;
+
+WITH e_n51 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0819-00002', DATE '2025-08-19', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '3주*$130.30*@1,393.3', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 552254, 0, 'invest' FROM e_n51
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 545009, 0, 'invest' FROM e_n51
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 0, 1097263, 'common' FROM e_n51;
+
+WITH e_n52 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0829-00001', DATE '2025-08-29', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[버티브홀딩스] 5주*$127.61*@1,389.0', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 546032, 0, 'invest' FROM e_n52
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 886843, 0, 'invest' FROM e_n52
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 0, 1432875, 'common' FROM e_n52;
+
+WITH e_n53 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0902-00001', DATE '2025-09-02', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[버티브홀딩스] ', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 530069, 0, 'invest' FROM e_n53
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 340198, 0, 'invest' FROM e_n53
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 0, 870267, 'common' FROM e_n53;
+
+WITH e_n54 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0905-00001', DATE '2025-09-05', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '2주*$314.39*@1,387.0', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 872709, 0, 'invest' FROM e_n54
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 0, 872709, 'common' FROM e_n54;
+
+WITH e_n55 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0908-00001', DATE '2025-09-08', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '1주*$321.19*@1,385.3', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 445240, 0, 'invest' FROM e_n55
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 0, 445240, 'common' FROM e_n55;
+
+WITH e_n56 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0911-00001', DATE '2025-09-11', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[유나이티드헬스클럽] 1주*$353.80*@1,389.7', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 491995, 0, 'invest' FROM e_n56
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 0, 491995, 'common' FROM e_n56;
+
+WITH e_n57 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0911-00002', DATE '2025-09-11', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[버티브홀딩스] VRT 4주 매도*이동평균₩182,001', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 0, 728005, 'invest' FROM e_n57
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 728005, 0, 'common' FROM e_n57;
+
+WITH e_n58 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0912-00001', DATE '2025-09-12', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '1주*$359.50*@1,393.0', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 501146, 0, 'invest' FROM e_n58
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 0, 501146, 'common' FROM e_n58;
+
+WITH e_n59 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0917-00001', DATE '2025-09-17', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[미국채권 아이셰어즈ETF] 9주*$100.82*@1,380.7', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 1253698, 0, 'invest' FROM e_n59
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 0, 1253698, 'common' FROM e_n59;
+
+WITH e_n60 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0917-00002', DATE '2025-09-17', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[금아이셰어즈ETF] 3주*$69.29*@1,380.7', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 287201, 0, 'invest' FROM e_n60
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 0, 287201, 'common' FROM e_n60;
+
+WITH e_n61 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0917-00003', DATE '2025-09-17', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[S&P500코어아이셰어즈ETF] 1주*$660.96*@1,380.7', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 913229, 0, 'invest' FROM e_n61
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 0, 913229, 'common' FROM e_n61;
+
+WITH e_n62 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0930-00001', DATE '2025-09-30', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[네이버파이낸셜] 스마트스토어정산', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 2979, 0, 'common' FROM e_n62
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11102'), 0, 2979, 'commerce' FROM e_n62;
+
+WITH e_n63 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0930-00002', DATE '2025-09-30', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[세무서] 부가세의 미지급계상', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11105'), 271, 0, 'common' FROM e_n63
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '21004'), 0, 271, 'common' FROM e_n63;
+
+WITH e_n64 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('0930-50001', DATE '2025-09-30', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[네이버파이낸셜] 우대수수료 환급', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11105'), 0, 271, 'common' FROM e_n64
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '61002'), 0, 2708, 'common' FROM e_n64
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11102'), 2979, 0, 'commerce' FROM e_n64;
+
+WITH e_n65 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('1002-00001', DATE '2025-10-02', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[포티넷] FTNT 5주 매도*이동평균₩122,295', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 0, 611473, 'invest' FROM e_n65
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 611473, 0, 'common' FROM e_n65;
+
+WITH e_n66 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('1008-50001', DATE '2025-10-08', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[현금영수증] 현금영수증', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11102'), 50000, 0, 'commerce' FROM e_n66
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '21002'), 0, 4545, 'common' FROM e_n66
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '41001'), 0, 45455, 'commerce' FROM e_n66;
+
+WITH e_n67 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('1010-00001', DATE '2025-10-10', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[네이버파이낸셜] 스마트스토어정산', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 47527, 0, 'common' FROM e_n67
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11102'), 0, 47527, 'commerce' FROM e_n67;
+
+WITH e_n68 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('1010-00002', DATE '2025-10-10', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[코인베이스COIN] 1주*$391.24*@1,429.6', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 559687, 0, 'invest' FROM e_n68
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 0, 559687, 'common' FROM e_n68;
+
+WITH e_n69 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('1010-00003', DATE '2025-10-10', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[포티넷] FTNT 15주 매도*이동평균₩122,295', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 0, 1834419, 'invest' FROM e_n69
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 1834419, 0, 'common' FROM e_n69;
+
+WITH e_n70 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('1013-00001', DATE '2025-10-13', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[코인베이스COIN] 1주*$355.00*@1,426.5', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 506750, 0, 'invest' FROM e_n70
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 0, 506750, 'common' FROM e_n70;
+
+WITH e_n71 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('1014-00002', DATE '2025-10-14', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[네이버파이낸셜] 스마트스토어정산', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 47527, 0, 'common' FROM e_n71
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11102'), 0, 47527, 'commerce' FROM e_n71;
+
+WITH e_n72 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('1015-00003', DATE '2025-10-15', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[네이버파이낸셜] 스마트스토어정산', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 47527, 0, 'common' FROM e_n72
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11102'), 0, 47527, 'commerce' FROM e_n72;
+
+WITH e_n73 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('1015-50001', DATE '2025-10-15', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[현금영수증] 현금영수증', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11102'), 4090, 0, 'commerce' FROM e_n73
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '21002'), 0, 371, 'common' FROM e_n73
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '41001'), 0, 3719, 'commerce' FROM e_n73;
+
+WITH e_n74 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('1016-00001', DATE '2025-10-16', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[네이버파이낸셜] 스마트스토어정산', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 47528, 0, 'common' FROM e_n74
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11102'), 0, 47528, 'commerce' FROM e_n74;
+
+WITH e_n75 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('1018-00001', DATE '2025-10-18', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[KB국민은행 754100] 부가가치세', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '21004'), 271, 0, 'common' FROM e_n75
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 0, 270, 'common' FROM e_n75
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '71003'), 0, 1, 'common' FROM e_n75;
+
+WITH e_n76 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('1023-00001', DATE '2025-10-23', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[코인베이스COIN] 1주*$321.50*@1,429.7', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 459966, 0, 'invest' FROM e_n76
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 0, 459966, 'common' FROM e_n76;
+
+WITH e_n77 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('1027-00001', DATE '2025-10-27', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[코인베이스COIN] COIN 1주 매도*이동평균₩508,801', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 0, 508801, 'invest' FROM e_n77
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 508801, 0, 'common' FROM e_n77;
+
+WITH e_n78 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('1027-00002', DATE '2025-10-27', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[버티브홀딩스] VRT 1주 매도*이동평균₩182,001', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 0, 182001, 'invest' FROM e_n78
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 182001, 0, 'common' FROM e_n78;
+
+WITH e_n79 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('1028-00001', DATE '2025-10-28', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[포티넷] FTNT 10주 매도①*이동평균₩122,295', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 0, 1222946, 'invest' FROM e_n79
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 1222946, 0, 'common' FROM e_n79;
+
+WITH e_n80 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('1028-00002', DATE '2025-10-28', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[포티넷] FTNT 10주 매도②*이동평균₩122,295', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 0, 1222946, 'invest' FROM e_n80
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 1222946, 0, 'common' FROM e_n80;
+
+WITH e_n81 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('1031-50001', DATE '2025-10-31', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[네이버파이낸셜] 판매수수료', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11105'), 899, 0, 'common' FROM e_n81
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '61002'), 8992, 0, 'common' FROM e_n81
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11102'), 0, 9891, 'commerce' FROM e_n81;
+
+WITH e_n82 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('1031-50003', DATE '2025-10-31', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[네이버파이낸셜] 네이버매출', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11102'), 145910, 0, 'commerce' FROM e_n82
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '21002'), 0, 13264, 'common' FROM e_n82
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '41001'), 0, 132646, 'commerce' FROM e_n82;
+
+WITH e_n83 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('1103-00001', DATE '2025-11-03', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[코인베이스COIN] 1주*$327.87*@1,430.0', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 469156, 0, 'invest' FROM e_n83
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 0, 469156, 'common' FROM e_n83;
+
+WITH e_n84 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('1105-00001', DATE '2025-11-05', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[코인베이스COIN] 1주*$313.95*@1,440.7', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 452617, 0, 'invest' FROM e_n84
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 0, 452617, 'common' FROM e_n84;
+
+WITH e_n85 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('1105-00002', DATE '2025-11-05', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[버티브홀딩스] 1주*$188.76*@1,440.7', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 272138, 0, 'invest' FROM e_n85
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 0, 272138, 'common' FROM e_n85;
+
+WITH e_n86 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('1106-00001', DATE '2025-11-06', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '1주*$182.48*@1,448.9', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 431421, 0, 'invest' FROM e_n86
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 264567, 0, 'invest' FROM e_n86
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 0, 695988, 'common' FROM e_n86;
+
+WITH e_n87 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('1112-00001', DATE '2025-11-12', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '1주*$179.91*@1,469.4', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 451699, 0, 'invest' FROM e_n87
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 264531, 0, 'invest' FROM e_n87
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 0, 716230, 'common' FROM e_n87;
+
+WITH e_n88 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('1113-00001', DATE '2025-11-13', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '1주*$173.10*@1,470.7', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 413840, 0, 'invest' FROM e_n88
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 237856, 0, 'invest' FROM e_n88
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 254916, 0, 'invest' FROM e_n88
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 0, 906612, 'common' FROM e_n88;
+
+WITH e_n89 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('1117-00001', DATE '2025-11-17', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '14주*$284.965*@1,462.3', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 762510, 0, 'invest' FROM e_n89
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 5837781, 0, 'invest' FROM e_n89
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 0, 6600291, 'common' FROM e_n89;
+
+WITH e_n90 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('1117-00002', DATE '2025-11-17', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[포티넷] FTNT 30주 매도*이동평균₩122,295', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 0, 3668838, 'invest' FROM e_n90
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 0, 2311090, 'invest' FROM e_n90
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 5979928, 0, 'common' FROM e_n90;
+
+WITH e_n91 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('1213-00001', DATE '2025-12-13', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[KB국민은행 754100] 결산이자', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 247, 0, 'common' FROM e_n91
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '71001'), 0, 247, 'common' FROM e_n91;
+
+WITH e_n92 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('1224-00001', DATE '2025-12-24', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[KB국민은행 754100] 공동인증서발급수수료', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '61002'), 4400, 0, 'common' FROM e_n92
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 0, 4400, 'common' FROM e_n92;
+
+WITH e_n93 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('1231-00001', DATE '2025-12-31', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[키움증권 2843-10] 매도실현수익', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '41002'), 0, 235622, 'invest' FROM e_n93
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 235622, 0, 'common' FROM e_n93
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '41002'), 87945, 0, 'invest' FROM e_n93
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 0, 87945, 'common' FROM e_n93;
+
+WITH e_n94 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('1231-00002', DATE '2025-12-31', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[키움증권 2843-10] 배당금수익', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '41002'), 0, 332522, 'invest' FROM e_n94
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 339807, 0, 'common' FROM e_n94
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '41002'), 0, 8605, 'invest' FROM e_n94
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11106'), 1200, 0, 'common' FROM e_n94
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11106'), 120, 0, 'common' FROM e_n94;
+
+WITH e_n95 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('1231-00003', DATE '2025-12-31', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[키움증권 2843-10] 매도수수료', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '61002'), 56152, 0, 'common' FROM e_n95
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 0, 56152, 'common' FROM e_n95;
+
+WITH e_n96 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('1231-00004', DATE '2025-12-31', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[키움증권 2843-10] 외화예수금 잔고 환차손', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '81001'), 2516, 0, 'common' FROM e_n96
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11101'), 0, 2516, 'common' FROM e_n96;
+
+WITH e_n97 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('1231-00005', DATE '2025-12-31', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '환율 조정', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 14205, 0, 'invest' FROM e_n97
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '71002'), 0, 14205, 'common' FROM e_n97;
+
+WITH e_n98 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('1231-00006', DATE '2025-12-31', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '평가이익', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11104'), 13485958, 0, 'invest' FROM e_n98
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '33001'), 0, 13485958, 'invest' FROM e_n98;
+
+WITH e_n99 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('1231-00007', DATE '2025-12-31', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '[세무서] 부가세 예수금과 상계', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '21002'), 18180, 0, 'common' FROM e_n99
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11105'), 0, 899, 'common' FROM e_n99
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '21004'), 0, 17283, 'common' FROM e_n99
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '81002'), 2, 0, 'common' FROM e_n99;
+
+WITH e_n100 AS (
+  INSERT INTO journal_entries (entry_no, entry_date, period_id, description, source_type, status, posted_at)
+  VALUES ('1231-00008', DATE '2025-12-31', (SELECT period_id FROM fiscal_periods WHERE fiscal_year = 2025), '상품매출원가 대체', 'manual', 'posted', now())
+  RETURNING entry_id
+)
+INSERT INTO journal_lines (entry_id, account_id, debit_amount, credit_amount, segment)
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '51001'), 151565, 0, 'commerce' FROM e_n100
+UNION ALL
+SELECT entry_id, (SELECT account_id FROM accounts WHERE account_code = '11201'), 0, 151565, 'commerce' FROM e_n100;
