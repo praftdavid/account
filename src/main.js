@@ -14,6 +14,7 @@ import { renderImportTransactions } from './pages/importTransactions.js';
 import { renderReviewTransactions } from './pages/reviewTransactions.js';
 import { renderBalanceSnapshots } from './pages/balanceSnapshots.js';
 import { renderSecuritiesReview } from './pages/securitiesReview.js';
+import { renderSecuritiesValuation } from './pages/securitiesValuation.js';
 import { renderSecuritiesPositions } from './pages/securitiesPositions.js';
 import { renderSecuritiesTrades } from './pages/securitiesTrades.js';
 import { renderSecuritiesDividends } from './pages/securitiesDividends.js';
@@ -48,6 +49,7 @@ const GROUPS = [
       ['import', '거래 업로드', renderImportTransactions],
       ['review', '거래 검토·분개', renderReviewTransactions],
       ['secReview', '증권 거래 분개', renderSecuritiesReview],
+      ['secValuation', '증권 재평가', renderSecuritiesValuation],
       ['snapshots', '잔액 대사', renderBalanceSnapshots],
     ],
   ],

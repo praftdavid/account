@@ -1,7 +1,7 @@
 import { supabase } from '../lib/supabaseClient.js';
 import { fetchAccounts, fetchPeriodIdForDate } from '../lib/data.js';
 import { esc, fmt } from '../lib/util.js';
-import { findFxRate, computeBuy, computeSell, computeDividend, buildBuyLines, buildSellLines, buildDividendLines } from '../lib/securitiesJournal.js';
+import { findFxRate, computeBuy, computeSell, computeDividend, computeOciReversal, buildBuyLines, buildSellLines, buildOciReversalLines, buildDividendLines } from '../lib/securitiesJournal.js';
 
 let selectedFinAccountId = null;
 
@@ -83,14 +83,16 @@ export async function renderSecuritiesReview(container) {
       if (hasRate) {
         if (t.txn_type === 'buy') {
           computed = computeBuy(lot, t, fxRate);
-          lotByTicker.set(t.ticker, { ticker: t.ticker, quantity: computed.newQty, unit_cost: computed.newUnitCost, cost_basis: computed.newCostBasis });
+          lotByTicker.set(t.ticker, { ticker: t.ticker, quantity: computed.newQty, unit_cost: computed.newUnitCost, cost_basis: computed.newCostBasis, unrealized_oci: lot?.unrealized_oci ?? 0 });
           preview = `취득원가 ${fmt(computed.costKrw)} · 평균단가 ${fmt(Math.round(computed.newUnitCost))}`;
         } else {
           computed = computeSell(lot, t, fxRate);
+          const ociReversal = computeOciReversal(lot, t.quantity);
           const newUnitCost = lot ? Number(lot.unit_cost) : 0;
-          lotByTicker.set(t.ticker, { ticker: t.ticker, quantity: computed.newQty, unit_cost: newUnitCost, cost_basis: computed.newCostBasis });
+          lotByTicker.set(t.ticker, { ticker: t.ticker, quantity: computed.newQty, unit_cost: newUnitCost, cost_basis: computed.newCostBasis, unrealized_oci: ociReversal.remainingOci });
           const glLabel = computed.gainLoss >= 0 ? '이익' : '손실';
           preview = `순매도대금 ${fmt(computed.proceedsKrw)} · 원가 ${fmt(computed.costRemoved)} · ${glLabel} ${fmt(Math.abs(computed.gainLoss))}`;
+          if (ociReversal.reversedOci) preview += ` · 유보추인 ${fmt(ociReversal.reversedOci)}`;
           if (!lot || Number(lot.quantity) < Number(t.quantity)) preview = `<span class="err">보유수량 부족(보유 ${lot ? fmt(lot.quantity) : 0}) — 매수 거래를 먼저 분개하세요</span>`;
         }
       }
@@ -130,12 +132,13 @@ export async function renderSecuritiesReview(container) {
     btn.disabled = true;
     errEl.textContent = '';
 
-    let securitiesAccountId, taxAccountId, incomeAccountId, expenseAccountId;
+    let securitiesAccountId, taxAccountId, incomeAccountId, expenseAccountId, ociAccountId;
     try {
       securitiesAccountId = findAcct(accounts, '11104');
       taxAccountId = findAcct(accounts, '11106');
       incomeAccountId = findAcct(accounts, '41002');
       expenseAccountId = findAcct(accounts, '51002');
+      ociAccountId = findAcct(accounts, '33001');
     } catch (err) {
       errEl.textContent = err.message;
       btn.disabled = false;
@@ -171,6 +174,7 @@ export async function renderSecuritiesReview(container) {
       let lines;
       let lotUpdate;
       let description;
+      let ociReversal = null;
 
       if (t.txn_type === 'buy') {
         const lot = lotState.get(t.ticker) ?? null;
@@ -182,9 +186,13 @@ export async function renderSecuritiesReview(container) {
         const lot = lotState.get(t.ticker) ?? null;
         if (!lot || Number(lot.quantity) < Number(t.quantity)) { skipped++; continue; }
         const computed = computeSell(lot, t, fxRate);
-        lines = buildSellLines(computed, securitiesAccountId, account.linked_gl_account_id, incomeAccountId, expenseAccountId);
-        lotUpdate = { ticker: t.ticker, name: lot.name, quantity: computed.newQty, unit_cost: Number(lot.unit_cost), cost_basis: computed.newCostBasis, acquire_date: lot.acquire_date, status: computed.newQty > 0 ? 'open' : 'closed', close_date: computed.newQty > 0 ? null : t.txn_date };
-        description = `[증권매도] ${t.name || t.ticker} ${fmt(t.quantity)}주 @${fmt(t.unit_price_usd)}${isKrw ? '' : 'USD'} 실현손익 ${fmt(computed.gainLoss)}`;
+        ociReversal = computeOciReversal(lot, t.quantity);
+        lines = [
+          ...buildSellLines(computed, securitiesAccountId, account.linked_gl_account_id, incomeAccountId, expenseAccountId),
+          ...buildOciReversalLines(ociReversal.reversedOci, securitiesAccountId, ociAccountId),
+        ];
+        lotUpdate = { ticker: t.ticker, name: lot.name, quantity: computed.newQty, unit_cost: Number(lot.unit_cost), cost_basis: computed.newCostBasis, unrealized_oci: ociReversal.remainingOci, acquire_date: lot.acquire_date, status: computed.newQty > 0 ? 'open' : 'closed', close_date: computed.newQty > 0 ? null : t.txn_date };
+        description = `[증권매도] ${t.name || t.ticker} ${fmt(t.quantity)}주 @${fmt(t.unit_price_usd)}${isKrw ? '' : 'USD'} 실현손익 ${fmt(computed.gainLoss)}${ociReversal.reversedOci ? ` · 유보추인 ${fmt(ociReversal.reversedOci)}` : ''}`;
       } else {
         const computed = computeDividend(t, fxRate);
         lines = buildDividendLines(computed, account.linked_gl_account_id, taxAccountId, incomeAccountId);
@@ -203,6 +211,33 @@ export async function renderSecuritiesReview(container) {
         await supabase.from('journal_entries').delete().eq('entry_id', entry.entry_id);
         skipped++;
         continue;
+      }
+
+      if (ociReversal?.reversedOci) {
+        // 그 종목 몫 유보를 추인 — 전기 평가익 환입과 동일한 쌍(익금산입 유보 + 손금산입 기타)의
+        // 부호를 반대로 하면 되므로 같은 패턴을 재사용한다. 종목명을 항목명에 붙여 기존 반기 집계
+        // 유보(항목명에 종목명 없음)와 구분되게 별도 줄로 쌓는다 — 합계는 그대로 정확히 줄어든다.
+        const fiscalYear = Number(t.txn_date.slice(0, 4));
+        const amt = Math.abs(ociReversal.reversedOci);
+        const gain = ociReversal.reversedOci > 0; // 평가이익 추인이면 익금산입 유보, 평가손실 추인이면 반대
+        await supabase.from('tax_adjustments').insert([
+          {
+            fiscal_year: fiscalYear,
+            item_name: `매도가능증권평가익(${t.ticker})`,
+            adjust_type: gain ? '익금산입' : '손금산입',
+            amount: amt,
+            disposal: '유보',
+            memo: `${t.txn_date} ${t.name || t.ticker} ${fmt(t.quantity)}주 매도에 따른 유보 추인`,
+          },
+          {
+            fiscal_year: fiscalYear,
+            item_name: `매도가능증권(${t.ticker})`,
+            adjust_type: gain ? '손금산입' : '익금산입',
+            amount: amt,
+            disposal: '기타',
+            memo: `위 유보 추인의 상대 조정`,
+          },
+        ]);
       }
 
       if (lotUpdate) {

@@ -78,6 +78,42 @@ export function buildSellLines({ proceedsKrw, costRemoved, gainLoss }, securitie
   return lines;
 }
 
+// 매도 시 OCI(공정가치 마크업) 추인 — §7-A 재평가로 11104에 실려있던 그 종목의 마크업분을
+// 매도 수량 비례로 제거한다. 안 그러면 이미 판 종목의 평가차액이 11104에 영구히 남는 회계 오류가 생긴다
+// (매도 분개는 원가만 대변 처리하므로, 마크업은 이 함수가 아니면 어디서도 안 지워짐).
+// lot.unrealized_oci가 없거나(백필 전) 0이면 추인할 게 없다.
+export function computeOciReversal(lot, soldQty) {
+  const oci = lot ? Number(lot.unrealized_oci ?? 0) : 0;
+  const qty = lot ? Number(lot.quantity) : 0;
+  if (!oci || !qty) return { reversedOci: 0, remainingOci: oci };
+  const reversedOci = Math.round((oci * Number(soldQty)) / qty);
+  return { reversedOci, remainingOci: oci - reversedOci };
+}
+
+// reversedOci>0(그 종목 몫 평가이익 제거): 차)매도가능증권평가익(33001) / 대)매도가능증권(11104).
+// reversedOci<0(평가손실 몫 제거)이면 반대. 손익 계정은 안 건드리므로 당기순이익에 영향 없음.
+export function buildOciReversalLines(reversedOci, securitiesAccountId, ociAccountId, segment = 'invest') {
+  if (!reversedOci) return [];
+  const amt = Math.abs(reversedOci);
+  return reversedOci > 0
+    ? [
+        { account_id: ociAccountId, debit_amount: amt, credit_amount: 0, segment },
+        { account_id: securitiesAccountId, debit_amount: 0, credit_amount: amt, segment },
+      ]
+    : [
+        { account_id: securitiesAccountId, debit_amount: amt, credit_amount: 0, segment },
+        { account_id: ociAccountId, debit_amount: 0, credit_amount: amt, segment },
+      ];
+}
+
+// 재평가(증권 재평가 화면용): 종목의 새 공정가치와 취득원가 차이 = 새 unrealized_oci.
+// delta = 이번에 추가/차감해야 할 변동분(직전 unrealized_oci 대비) — 반기 재평가 JE·세무조정 금액이 된다.
+export function computeRevaluation(lot, fairValue) {
+  const newOci = Math.round(Number(fairValue) - Number(lot.cost_basis));
+  const prevOci = Number(lot.unrealized_oci ?? 0);
+  return { newOci, delta: newOci - prevOci };
+}
+
 // 분개: 해외(순액법) — 차)GL계정(순액) / 대)금융영업수익(순액), 원천세는 자산화하지 않음.
 //       국내 — 차)GL계정(실수령) + 차)선납세금(원천세, 있으면) / 대)금융영업수익(총배당금), 기존과 동일.
 export function buildDividendLines({ grossKrw, taxKrw, netKrw, isForeign }, glAccountId, taxAccountId, incomeAccountId, segment = 'invest') {
