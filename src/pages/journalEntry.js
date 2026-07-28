@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabaseClient.js';
-import { fetchAccounts, fetchPeriodIdForDate } from '../lib/data.js';
+import { fetchAccounts, fetchPeriodIdForDate, fetchMaxEntryNo, formatEntryNo } from '../lib/data.js';
 import { todayStr } from '../lib/util.js';
 import { CATEGORY_ORDER, leafAccounts, categoryOptionsHtml, accountOptionsHtml } from '../lib/accountPicker.js';
 
@@ -152,9 +152,17 @@ export async function renderJournalEntry(container) {
 
     saveBtn.disabled = true;
 
+    let entryNo = null;
+    try {
+      entryNo = formatEntryNo((await fetchMaxEntryNo(Number(entryDate.slice(0, 4)))) + 1);
+    } catch {
+      entryNo = null; // 채번 실패해도 분개 저장 자체는 막지 않음(번호는 표시용)
+    }
+
     const { data: entry, error: e1 } = await supabase
       .from('journal_entries')
       .insert({
+        entry_no: entryNo,
         entry_date: entryDate,
         period_id: periodId,
         description: document.getElementById('f_desc').value.trim() || null,

@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabaseClient.js';
-import { fetchAccounts, fetchPeriodIdForDate, fetchFiscalYears } from '../lib/data.js';
+import { fetchAccounts, fetchPeriodIdForDate, fetchFiscalYears, fetchMaxEntryNo, formatEntryNo } from '../lib/data.js';
 import { esc, fmt, todayStr } from '../lib/util.js';
 import { halfYearEndPickerHtml, wireHalfYearEndPicker } from '../lib/asOfDate.js';
 import { computeRevaluation } from '../lib/securitiesJournal.js';
@@ -187,9 +187,15 @@ export async function renderSecuritiesValuation(container) {
     // 1) 재평가 분개(1건) — netDelta>0: 차)11104 / 대)33001, netDelta<0이면 반대
     if (netDelta !== 0) {
       const amt = Math.abs(netDelta);
+      let entryNo = null;
+      try {
+        entryNo = formatEntryNo((await fetchMaxEntryNo(Number(asOfDate.slice(0, 4)))) + 1);
+      } catch {
+        entryNo = null;
+      }
       const { data: entry, error: e1 } = await supabase
         .from('journal_entries')
-        .insert({ entry_date: asOfDate, period_id: periodId, description: `[증권 재평가] ${asOfDate} 기준`, source_type: 'auto', status: 'draft' })
+        .insert({ entry_no: entryNo, entry_date: asOfDate, period_id: periodId, description: `[증권 재평가] ${asOfDate} 기준`, source_type: 'auto', status: 'draft' })
         .select()
         .single();
       if (e1) {

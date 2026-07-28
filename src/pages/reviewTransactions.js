@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabaseClient.js';
-import { fetchAccounts, fetchPeriodIdForDate } from '../lib/data.js';
+import { fetchAccounts, fetchPeriodIdForDate, fetchMaxEntryNo, formatEntryNo } from '../lib/data.js';
 import { esc, fmt } from '../lib/util.js';
 import { CATEGORY_ORDER, leafAccounts, categoryOptionsHtml, accountOptionsHtml } from '../lib/accountPicker.js';
 import { suggestAccount, detectTransferPairs, buildJournalLines } from '../lib/autoJournal.js';
@@ -112,6 +112,7 @@ export async function renderReviewTransactions(container) {
     const selectedRows = [...body.querySelectorAll('tr[data-txn]')].filter((tr) => tr.querySelector('.rowChk').checked);
     let created = 0;
     let skipped = 0;
+    const entryNoCache = {}; // fiscalYear -> 다음에 쓸 전표번호(정수). 배치 안에서 매번 다시 조회하지 않게 캐시.
 
     for (const tr of selectedRows) {
       const rawTxnId = Number(tr.dataset.txn);
@@ -134,9 +135,20 @@ export async function renderReviewTransactions(container) {
         continue;
       }
 
+      const fiscalYear = Number(txn.txn_date.slice(0, 4));
+      if (entryNoCache[fiscalYear] === undefined) {
+        try {
+          entryNoCache[fiscalYear] = await fetchMaxEntryNo(fiscalYear);
+        } catch {
+          entryNoCache[fiscalYear] = null;
+        }
+      }
+      const entryNo = entryNoCache[fiscalYear] === null ? null : formatEntryNo(++entryNoCache[fiscalYear]);
+
       const { data: entry, error: e1 } = await supabase
         .from('journal_entries')
         .insert({
+          entry_no: entryNo,
           entry_date: txn.txn_date,
           period_id: periodId,
           description: txn.memo,

@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabaseClient.js';
-import { fetchAccounts, fetchPeriodIdForDate } from '../lib/data.js';
+import { fetchAccounts, fetchPeriodIdForDate, fetchMaxEntryNo, formatEntryNo } from '../lib/data.js';
 import { esc, fmt } from '../lib/util.js';
 import { findFxRate, computeBuy, computeSell, computeDividend, computeOciReversal, buildBuyLines, buildSellLines, buildOciReversalLines, buildDividendLines } from '../lib/securitiesJournal.js';
 
@@ -153,6 +153,7 @@ export async function renderSecuritiesReview(container) {
 
     let created = 0;
     let skipped = 0;
+    const entryNoCache = {}; // fiscalYear -> 다음에 쓸 전표번호(정수). 배치 안에서 매번 다시 조회하지 않게 캐시.
 
     for (const tr of selectedTrs) {
       const secTxnId = Number(tr.dataset.txn);
@@ -199,9 +200,19 @@ export async function renderSecuritiesReview(container) {
         description = `[배당금] ${t.name || t.ticker}`;
       }
 
+      const fiscalYear = Number(t.txn_date.slice(0, 4));
+      if (entryNoCache[fiscalYear] === undefined) {
+        try {
+          entryNoCache[fiscalYear] = await fetchMaxEntryNo(fiscalYear);
+        } catch {
+          entryNoCache[fiscalYear] = null;
+        }
+      }
+      const entryNo = entryNoCache[fiscalYear] === null ? null : formatEntryNo(++entryNoCache[fiscalYear]);
+
       const { data: entry, error: e1 } = await supabase
         .from('journal_entries')
-        .insert({ entry_date: t.txn_date, period_id: periodId, description, source_type: 'auto', status: 'draft' })
+        .insert({ entry_no: entryNo, entry_date: t.txn_date, period_id: periodId, description, source_type: 'auto', status: 'draft' })
         .select()
         .single();
       if (e1) { skipped++; continue; }

@@ -87,3 +87,23 @@ export async function fetchTrialBalance(asOfDate) {
 
   return { rows, period, accounts, 누적순이익 };
 }
+
+// 전표번호(entry_no) — 회계연도 안에서 5자리로 채운 순번("00001", "00002"…, 레거시 이관 데이터와
+// 같은 표기). 개시분개("OPEN-2025")처럼 숫자가 아닌 표기도 있을 수 있어 순수 숫자 형식만 최댓값
+// 후보로 본다. 동시 입력 충돌은 신경 쓰지 않는다(단일 사용자 앱).
+export async function fetchMaxEntryNo(fiscalYear) {
+  const { data, error } = await supabase
+    .from('journal_entries')
+    .select('entry_no')
+    .gte('entry_date', `${fiscalYear}-01-01`)
+    .lte('entry_date', `${fiscalYear}-12-31`);
+  if (error) throw error;
+  return (data ?? []).reduce((max, r) => {
+    const n = Number(r.entry_no);
+    return r.entry_no && /^\d+$/.test(r.entry_no) && n > max ? n : max;
+  }, 0);
+}
+
+export function formatEntryNo(n) {
+  return String(n).padStart(5, '0');
+}
