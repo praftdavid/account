@@ -62,10 +62,19 @@ export function computeIncomeStatement(accounts, tb) {
       : accounts.filter((a) => a.parent_account_id === top.account_id).sort((a, b) => a.account_code.localeCompare(b.account_code));
   const categoryTotal = (name) => childrenOf(catByName(name)).reduce((s, c) => s + flow(c.account_id), 0);
   const detail = (name) => childrenOf(catByName(name)).map((c) => [`　${esc(c.account_name)}`, flow(c.account_id), false]);
+  const flowOf = (code) => {
+    const acc = accounts.find((a) => a.account_code === code);
+    return acc ? flow(acc.account_id) : 0;
+  };
 
   const 매출액 = categoryTotal('매출');
   const 매출원가 = categoryTotal('매출원가');
   const 매출총이익 = 매출액 - 매출원가;
+  // 이 회사는 사업부문이 상거래(상품매출 41001/원가 51001)와 증권투자(증권매매수익 41002·배당금수익
+  // 41003/증권매매손실 51002) 둘로 뚜렷이 나뉘어서, 매출총이익 하나로 뭉뚱그리면 어느 쪽이 실적을
+  // 견인했는지 안 보인다.
+  const 상품매출손익 = flowOf('41001') - flowOf('51001');
+  const 금융영업손익 = flowOf('41002') + flowOf('41003') - flowOf('51002');
   const 판관비 = categoryTotal('판매비와관리비');
   const 영업이익 = 매출총이익 - 판관비;
   const 영업외수익 = categoryTotal('영업외수익');
@@ -80,6 +89,8 @@ export function computeIncomeStatement(accounts, tb) {
     [REVENUE_CATEGORY_LABEL.매출원가, 매출원가, true],
     ...detail('매출원가'),
     ['Ⅲ. 매출총이익', 매출총이익, true],
+    ['　상품매출손익', 상품매출손익, false],
+    ['　금융영업손익', 금융영업손익, false],
     [REVENUE_CATEGORY_LABEL.판매비와관리비, 판관비, true],
     ...detail('판매비와관리비'),
     ['Ⅴ. 영업이익', 영업이익, true],

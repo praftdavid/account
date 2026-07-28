@@ -126,14 +126,20 @@ export async function parseKiwoomPdf(file) {
           fee_usd: isKrwDenominated ? feeKrw : feeUsd,
         });
       } else {
+        // 배당은 "최초입금 → 취소출금(같은 금액) → 정정입금(들)"으로 3~4줄에 걸쳐 나오는 경우가
+        // 실제로 있다(적요명이 전부 "배당"을 포함해서 취소도 배당으로 잡힘). 입출구분(매체구분행의
+        // 2번째 칸)이 "출금"이면 취소이므로 부호를 반대로 한다 — 안 그러면 취소분까지 이중으로
+        // 더해져 배당수익이 실제보다 부풀려진다(2026년 7월 배당에서 실제로 발견된 문제).
+        const isWithdrawal = mediaRow[1] === '출금';
+        const sign = isWithdrawal ? -1 : 1;
         securities.push({
           kind: 'dividend',
           txn_date,
           ticker,
           name,
           currency: isKrwDenominated ? 'KRW' : 'USD',
-          gross_usd: isKrwDenominated ? settleKrw : grossForeign,
-          tax_usd: isKrwDenominated ? 0 : grossForeign - netForeign,
+          gross_usd: sign * (isKrwDenominated ? settleKrw : grossForeign),
+          tax_usd: sign * (isKrwDenominated ? 0 : grossForeign - netForeign),
         });
       }
       prevBalance = toNumber(numTokens[numTokens.length - 1]);

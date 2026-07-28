@@ -91,7 +91,6 @@ export async function renderSecuritiesPositions(container) {
         <td class="num" style="color:${gain === null ? 'inherit' : gain >= 0 ? '#b3261e' : '#1f4fd8'}">${gain === null ? '–' : fmt(gain)}</td>
         <td class="num">${rate === null ? '–' : `${rate >= 0 ? '+' : ''}${rate.toFixed(1)}%`}</td>
         <td class="num">${pct.toFixed(1)}%</td>
-        <td><div style="background:#e8edf5;border-radius:3px;height:10px;min-width:60px"><div style="background:#2b4570;height:10px;border-radius:3px;width:${pct.toFixed(1)}%"></div></div></td>
       </tr>`;
     })
     .join('');
@@ -127,15 +126,15 @@ export async function renderSecuritiesPositions(container) {
       ? `${selectedDate} 잔고증명서 기준. 평가이익 = 평가금액 − 취득원가(이동평균법).`
       : '현재 보유 로트 기준. 해당 시점 잔고증명서가 없어 평가금액·평가이익은 표시하지 않습니다.'}</p>
     <div style="overflow-x:auto"><table id="posTable">
-      <tr><th>계좌</th><th>종목명</th><th>종목코드</th><th>수량</th><th>취득원가(원)</th><th>평가금액(원)</th><th>평가이익(원)</th><th>수익률</th><th>비중</th><th></th></tr>
-      ${rows || '<tr><td colspan="10" class="note">해당 기준일에 보유 종목이 없습니다.</td></tr>'}
+      <tr><th>계좌</th><th>종목명</th><th>종목코드</th><th>수량</th><th>취득원가(원)</th><th>평가금액(원)</th><th>평가이익(원)</th><th>수익률</th><th>비중</th></tr>
+      ${rows || '<tr><td colspan="9" class="note">해당 기준일에 보유 종목이 없습니다.</td></tr>'}
       ${visible.length ? `<tr>
         <td colspan="4"><b>합계${selectedAcct === 'all' ? '' : ' (선택 계좌)'}</b></td>
         <td class="num"><b>${fmt(shownCost)}</b></td>
         <td class="num"><b>${isSnapshot ? fmt(shownFair) : '–'}</b></td>
         <td class="num"><b>${isSnapshot ? fmt(shownGain) : '–'}</b></td>
         <td class="num"><b>${isSnapshot && shownCost > 0 ? `${shownGain >= 0 ? '+' : ''}${((shownGain / shownCost) * 100).toFixed(1)}%` : '–'}</b></td>
-        <td class="num"><b>100.0%</b></td><td></td>
+        <td class="num"><b>100.0%</b></td>
       </tr>` : ''}
     </table></div>
 

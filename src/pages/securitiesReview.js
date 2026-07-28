@@ -132,12 +132,13 @@ export async function renderSecuritiesReview(container) {
     btn.disabled = true;
     errEl.textContent = '';
 
-    let securitiesAccountId, taxAccountId, incomeAccountId, expenseAccountId, ociAccountId;
+    let securitiesAccountId, taxAccountId, incomeAccountId, expenseAccountId, ociAccountId, dividendAccountId;
     try {
       securitiesAccountId = findAcct(accounts, '11104');
       taxAccountId = findAcct(accounts, '11106');
-      incomeAccountId = findAcct(accounts, '41002');
-      expenseAccountId = findAcct(accounts, '51002');
+      incomeAccountId = findAcct(accounts, '41002'); // 증권매매수익 — 실현매매차익 전용
+      expenseAccountId = findAcct(accounts, '51002'); // 증권매매손실
+      dividendAccountId = findAcct(accounts, '41003'); // 배당금수익 — 매매차익과 분리 관리
       ociAccountId = findAcct(accounts, '33001');
     } catch (err) {
       errEl.textContent = err.message;
@@ -196,7 +197,7 @@ export async function renderSecuritiesReview(container) {
         description = `[증권매도] ${t.name || t.ticker} ${fmt(t.quantity)}주 @${fmt(t.unit_price_usd)}${isKrw ? '' : 'USD'} 실현손익 ${fmt(computed.gainLoss)}${ociReversal.reversedOci ? ` · 유보추인 ${fmt(ociReversal.reversedOci)}` : ''}`;
       } else {
         const computed = computeDividend(t, fxRate);
-        lines = buildDividendLines(computed, account.linked_gl_account_id, taxAccountId, incomeAccountId);
+        lines = buildDividendLines(computed, account.linked_gl_account_id, taxAccountId, dividendAccountId);
         description = `[배당금] ${t.name || t.ticker}`;
       }
 

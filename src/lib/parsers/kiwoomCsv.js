@@ -53,6 +53,10 @@ export async function parseKiwoomCsv(file) {
     const isBuy = e.name && /매수/.test(e.desc);
     const isSell = e.name && /매도/.test(e.desc);
     const isDividend = /배당/.test(e.desc);
+    // 배당은 "최초입금 → 취소출금(같은 금액) → 정정입금(들)"으로 여러 줄에 걸쳐 나올 수 있다
+    // (적요명이 전부 "배당"을 포함해서 취소도 배당으로 잡힘 — kiwoomPdf.js에서 실제로 발견된 문제와
+    // 동일). 적요에 "취소"가 있으면 부호를 반대로 해 이중 계상을 막는다.
+    const isCancellation = /취소/.test(e.desc);
 
     if (isBuy || isSell) {
       securities.push({
@@ -60,7 +64,8 @@ export async function parseKiwoomCsv(file) {
         currency: 'USD', quantity: e.quantity, unit_price_usd: e.unit_price_usd, fee_usd: e.fee_usd,
       });
     } else if (isDividend) {
-      securities.push({ kind: 'dividend', txn_date: e.txn_date, ticker: e.name || null, name: e.name || e.desc, currency: 'USD', gross_usd: e.gross_usd, tax_usd: e.tax_usd });
+      const sign = isCancellation ? -1 : 1;
+      securities.push({ kind: 'dividend', txn_date: e.txn_date, ticker: e.name || null, name: e.name || e.desc, currency: 'USD', gross_usd: sign * e.gross_usd, tax_usd: sign * e.tax_usd });
     } else {
       const amount = e.krw_balance - prevBalance;
       if (amount !== 0) cash.push({ txn_date: e.txn_date, amount, memo: e.desc, balance_after: e.krw_balance });

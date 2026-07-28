@@ -116,12 +116,21 @@ export function computeRevaluation(lot, fairValue) {
 
 // 분개: 해외(순액법) — 차)GL계정(순액) / 대)금융영업수익(순액), 원천세는 자산화하지 않음.
 //       국내 — 차)GL계정(실수령) + 차)선납세금(원천세, 있으면) / 대)금융영업수익(총배당금), 기존과 동일.
+// netKrw가 음수인 경우(배당 취소/정정 거래 — kiwoomPdf.js/kiwoomCsv.js가 "취소"를 음수로 넘김)는
+// 차변/대변을 반대로 뒤집는다 — journal_lines는 debit_amount/credit_amount가 항상 0 이상이어야 하므로
+// (buildOciReversalLines와 동일한 패턴).
 export function buildDividendLines({ grossKrw, taxKrw, netKrw, isForeign }, glAccountId, taxAccountId, incomeAccountId, segment = 'invest') {
   if (isForeign) {
-    return [
-      { account_id: glAccountId, debit_amount: netKrw, credit_amount: 0, segment },
-      { account_id: incomeAccountId, debit_amount: 0, credit_amount: netKrw, segment },
-    ];
+    const amt = Math.abs(netKrw);
+    return netKrw >= 0
+      ? [
+          { account_id: glAccountId, debit_amount: amt, credit_amount: 0, segment },
+          { account_id: incomeAccountId, debit_amount: 0, credit_amount: amt, segment },
+        ]
+      : [
+          { account_id: incomeAccountId, debit_amount: amt, credit_amount: 0, segment },
+          { account_id: glAccountId, debit_amount: 0, credit_amount: amt, segment },
+        ];
   }
   const lines = [{ account_id: glAccountId, debit_amount: netKrw, credit_amount: 0, segment }];
   if (taxKrw > 0) lines.push({ account_id: taxAccountId, debit_amount: taxKrw, credit_amount: 0, segment });
