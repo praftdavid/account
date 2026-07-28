@@ -88,13 +88,35 @@ export async function parseKiwoomBalanceCert(file) {
     throw new Error('"보유 증권 명세서" 표를 찾을 수 없습니다(문서 구성이 예상과 다릅니다).');
   }
 
+  // 종목명이 길면 셀 안에서 줄바꿈돼 별도 행(들)로 떨어져 나오고, 정작 숫자가 있는 데이터 행에는
+  // "구분 + 숫자 4개"만 남아 이름이 비어버리는 경우가 실제로 있다(예: "미국채권아이셰어즈ETF"가
+  // "미국 채권 아이셰어즈"/(데이터 행)/"ETF"처럼 데이터 행 앞뒤로 쪼개짐 — 2025년말 발급분에서
+  // 실제로 이 문제로 종목이 통째로 누락됐었다). 데이터 행 앞뒤에 붙은 짧은 텍스트 조각을 종목명
+  // 후보로 모아 합친다. 표 헤더 자체가 "질권(권리제한)수량"처럼 두 줄로 쪼개지며 남기는 낱토큰
+  // ("수량" 등)은 종목명이 아니므로 걸러낸다.
+  const HEADER_FRAGMENTS = new Set(['구분', '종목명', '수량', '평가단가', '평가금액', '평가금액(원)', '질권(권리제한)', '질권', '권리제한']);
   const holdings = [];
+  let nameBuffer = [];
   for (let i = headerRowIdx + 1; i < rows.length; i++) {
     const r = mergeSplitDecimals(rows[i]);
-    if (r.length < 6) continue; // 표 헤더가 두 줄로 쪼개져 생기는 낱토큰 행 등은 건너뜀
+    if (r.length < 5) {
+      for (const tok of r) if (!HEADER_FRAGMENTS.has(tok)) nameBuffer.push(tok);
+      continue;
+    }
     const last4 = r.slice(-4);
-    if (!last4.every((t) => NUM_RE.test(t))) continue;
-    const name = r.slice(1, r.length - 4).join(' ').trim();
+    if (!last4.every((t) => NUM_RE.test(t))) { nameBuffer = []; continue; }
+    const inlineName = r.slice(1, r.length - 4).join(' ').trim();
+
+    // 다음 행이 숫자 없는 짧은 텍스트 조각이면 종목명의 나머지 절반일 수 있으니 미리 살펴 흡수한다.
+    // 단, 이 데이터 행 자체에 이미 완전한 inlineName이 있으면(정상적인 한 줄짜리 종목명) 흡수하지
+    // 않는다 — 그렇지 않으면 다음 종목의 앞부분 이름 조각을 이번 행의 접미사로 잘못 삼켜버린다.
+    const next = mergeSplitDecimals(rows[i + 1] ?? []);
+    const nextIsTextFragment = !inlineName && next.length > 0 && next.length < 5 && !next.every((t) => HEADER_FRAGMENTS.has(t));
+    const suffix = nextIsTextFragment ? next.filter((t) => !HEADER_FRAGMENTS.has(t)).join(' ') : '';
+    if (nextIsTextFragment) i++;
+
+    const name = [nameBuffer.join(' '), inlineName, suffix].filter(Boolean).join(' ').trim();
+    nameBuffer = [];
     if (!name) continue;
     const [quantity, unitPrice, fairValue] = last4;
     holdings.push({
