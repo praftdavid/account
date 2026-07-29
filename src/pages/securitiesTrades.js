@@ -1,11 +1,18 @@
 import { supabase } from '../lib/supabaseClient.js';
-import { fetchAccounts } from '../lib/data.js';
-import { esc, fmt } from '../lib/util.js';
+import { fetchAccounts, fetchFiscalYears } from '../lib/data.js';
+import { esc, fmt, todayStr } from '../lib/util.js';
+
+let selectedYear = null;
 
 // 매매내역 — 조회 전용(분개생성 없음). securities_transactions(매수/매도) 전체 이력.
+// 배당금내역·환전내역·환율과 같은 이유로 연도 단위로 끊어서 본다(매매도 매년 새로 쌓이는 이력이라
+// 재무상태표 계정처럼 누적할 이유가 없고, 연도가 쌓일수록 한 화면에 다 보여주면 못 쓰게 된다).
 // 매도 건의 실현손익은 분개 생성 시 journal_lines에 이미 기록된 값(금융영업수익/비용 계정)을 그대로 조회해 보여준다
 // (securities_lots는 이동평균 한 줄만 계속 갱신하는 구조라 과거 매도 시점의 손익을 lot에서 재계산할 수 없음).
 export async function renderSecuritiesTrades(container) {
+  const years = await fetchFiscalYears();
+  if (!selectedYear) selectedYear = years[years.length - 1] ?? Number(todayStr().slice(0, 4));
+
   const [{ data: finAccounts, error: finErr }, accounts, { data: txns, error: txnErr }] = await Promise.all([
     supabase.from('financial_accounts').select('*').eq('account_kind', 'securities').order('fin_account_id'),
     fetchAccounts({ activeOnly: true }),
@@ -13,6 +20,8 @@ export async function renderSecuritiesTrades(container) {
       .from('securities_transactions')
       .select('*')
       .in('txn_type', ['buy', 'sell'])
+      .gte('txn_date', `${selectedYear}-01-01`)
+      .lte('txn_date', `${selectedYear}-12-31`)
       .order('txn_date', { ascending: false }),
   ]);
   if (finErr || txnErr) {
@@ -60,12 +69,25 @@ export async function renderSecuritiesTrades(container) {
     })
     .join('');
 
+  const buyCount = (txns ?? []).filter((t) => t.txn_type === 'buy').length;
+  const sellCount = (txns ?? []).filter((t) => t.txn_type === 'sell').length;
+
   container.innerHTML = `
   <div class="card">
     <h2>매매내역</h2>
+    <div class="toolbar">
+      <label>연도: </label>
+      <select id="tradeYear">${years.map((y) => `<option value="${y}" ${y === selectedYear ? 'selected' : ''}>${y}년</option>`).join('')}</select>
+      <span class="note">${selectedYear}년 매수 <b>${buyCount}</b>건 · 매도 <b>${sellCount}</b>건</span>
+    </div>
     <div style="overflow-x:auto"><table>
       <tr><th>일자</th><th>계좌</th><th>구분</th><th>종목</th><th>수량</th><th>단가</th><th>수수료</th><th>통화</th><th>실현손익(원)</th><th>상태</th></tr>
-      ${rows || '<tr><td colspan="10" class="note">매매 내역이 없습니다.</td></tr>'}
+      ${rows || `<tr><td colspan="10" class="note">${selectedYear}년 매매 내역이 없습니다.</td></tr>`}
     </table></div>
   </div>`;
+
+  document.getElementById('tradeYear').addEventListener('change', (ev) => {
+    selectedYear = Number(ev.target.value);
+    renderSecuritiesTrades(container);
+  });
 }

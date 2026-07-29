@@ -20,10 +20,12 @@ import { renderSecuritiesPositions } from './pages/securitiesPositions.js';
 import { renderSecuritiesTrades } from './pages/securitiesTrades.js';
 import { renderSecuritiesDividends } from './pages/securitiesDividends.js';
 import { renderSecuritiesFx } from './pages/securitiesFx.js';
+import { renderSecuritiesFxRates } from './pages/securitiesFxRates.js';
 import { renderTaxComputation } from './pages/taxComputation.js';
 import { renderTaxAdjustments } from './pages/taxAdjustments.js';
 import { renderTaxReserves } from './pages/taxReserves.js';
 import { renderTaxCredits } from './pages/taxCredits.js';
+import { renderDashboard } from './pages/dashboard.js';
 import { esc } from './lib/util.js';
 
 // 메뉴 배치 원칙:
@@ -40,6 +42,11 @@ import { esc } from './lib/util.js';
 //     예: "증권 재평가"는 반기/연말 잔고증명서가 왔을 때만 하는 주기적 마감 작업이라, 일상적인
 //     거래 처리·대사가 다 끝난 뒤(잔액 대사 다음)에 오는 게 맞다.
 const GROUPS = [
+  [
+    'home',
+    '대시보드',
+    [['dashboard', '대시보드', renderDashboard]],
+  ],
   [
     'base',
     '기초정보',
@@ -98,6 +105,7 @@ const GROUPS = [
       ['secTrades', '매매내역', renderSecuritiesTrades],
       ['secDividends', '배당금내역', renderSecuritiesDividends],
       ['secFx', '환전내역', renderSecuritiesFx],
+      ['secFxRates', '환율(거래일 대사)', renderSecuritiesFxRates],
     ],
   ],
 ];
@@ -107,7 +115,7 @@ const mainEl = document.getElementById('main');
 const userbarEl = document.getElementById('userbar');
 
 let session = null;
-let cur = 'accounts';
+let cur = 'dashboard';
 
 function groupOf(view) {
   return GROUPS.find((g) => g[2].some((v) => v[0] === view));
@@ -133,7 +141,7 @@ async function render() {
 
   navEl.innerHTML = `
     <div class="nav-row nav-groups">${GROUPS.map(([k, label]) => `<button class="${k === curGroup[0] ? 'on' : ''}" data-group="${k}">${label}</button>`).join('')}</div>
-    <div class="nav-row nav-items">${curGroup[2].map(([k, label]) => `<button class="${k === cur ? 'on' : ''}" data-view="${k}">${label}</button>`).join('')}</div>`;
+    ${curGroup[2].length > 1 ? `<div class="nav-row nav-items">${curGroup[2].map(([k, label]) => `<button class="${k === cur ? 'on' : ''}" data-view="${k}">${label}</button>`).join('')}</div>` : ''}`;
 
   navEl.querySelectorAll('[data-group]').forEach((b) => {
     b.onclick = () => {
@@ -159,7 +167,7 @@ supabase.auth.getSession().then(({ data }) => {
 
 supabase.auth.onAuthStateChange((_event, newSession) => {
   session = newSession;
-  if (!session) cur = 'accounts';
+  if (!session) cur = 'dashboard';
   render();
 });
 
