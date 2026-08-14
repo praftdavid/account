@@ -32,7 +32,7 @@ export async function renderAccounts(container) {
         <td>${esc(a.std_report_code ?? '')}</td>
         <td class="c">
           <button class="btn sm ghost" data-edit="${a.account_id}">수정</button>
-          <button class="btn sm ${a.is_active ? 'danger' : ''}" data-toggle="${a.account_id}">${a.is_active ? '비활성화' : '활성화'}</button>
+          <button class="btn sm ghost" data-toggle="${a.account_id}">${a.is_active ? '비활성화' : '활성화'}</button>
         </td>
       </tr>`
     )

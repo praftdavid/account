@@ -28,7 +28,7 @@ export async function renderJournalEntry(container) {
     <form id="jeForm">
       <div class="toolbar">
         <div><label class="note">날짜</label><br><input type="date" id="f_date" value="${todayStr()}" required></div>
-        <div style="flex:1"><label class="note">적요</label><br><input id="f_desc" placeholder="예: 부가가치세 납부" style="width:100%;padding:7px;border:1px solid var(--bd);border-radius:5px;"></div>
+        <div style="flex:1"><label class="note">적요</label><br><input type="text" id="f_desc" placeholder="예: 부가가치세 납부" style="width:100%"></div>
       </div>
       <div id="linesBox"></div>
       <div class="toolbar">

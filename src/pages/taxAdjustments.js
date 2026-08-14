@@ -53,14 +53,14 @@ export async function renderTaxAdjustments(container) {
     <div style="overflow-x:auto"><table id="taxTableAdd">
       <tr><th>항목</th><th>구분</th><th>금액(원)</th><th>소득처분</th><th>비고</th><th></th></tr>
       ${rowsHtml(additions) || '<tr><td colspan="6" class="note">등록된 내역이 없습니다.</td></tr>'}
-      ${additions.length ? `<tr><td colspan="2"><b>합계</b></td><td class="num"><b>${fmt(sum(additions))}</b></td><td colspan="3"></td></tr>` : ''}
+      ${additions.length ? `<tr class="tot"><td colspan="2">합계</td><td class="num">${fmt(sum(additions))}</td><td colspan="3"></td></tr>` : ''}
     </table></div>
 
     <h3 style="margin-top:20px">손금산입 · 익금불산입 (차감)</h3>
     <div style="overflow-x:auto"><table id="taxTableSub">
       <tr><th>항목</th><th>구분</th><th>금액(원)</th><th>소득처분</th><th>비고</th><th></th></tr>
       ${rowsHtml(subtractions) || '<tr><td colspan="6" class="note">등록된 내역이 없습니다.</td></tr>'}
-      ${subtractions.length ? `<tr><td colspan="2"><b>합계</b></td><td class="num"><b>${fmt(sum(subtractions))}</b></td><td colspan="3"></td></tr>` : ''}
+      ${subtractions.length ? `<tr class="tot"><td colspan="2">합계</td><td class="num">${fmt(sum(subtractions))}</td><td colspan="3"></td></tr>` : ''}
     </table></div>
 
     <h3 style="margin-top:24px">세무조정 추가</h3>
@@ -71,7 +71,7 @@ export async function renderTaxAdjustments(container) {
       <div><label class="note">소득처분</label><br><select id="f_disposal">${DISPOSALS.map((d) => `<option>${d}</option>`).join('')}</select></div>
       <div><label class="note">관련 계정(선택)</label><br><select id="f_account"><option value="">(없음)</option>${(accounts ?? []).map((a) => `<option value="${a.account_id}">${esc(a.account_code)} ${esc(a.account_name)}</option>`).join('')}</select></div>
       <div><label class="note">비고</label><br><input type="text" id="f_memo"></div>
-      <button class="btn" type="submit">추가</button>
+      <div><label class="note">&nbsp;</label><br><button class="btn" type="submit">추가</button></div>
       <span class="err" id="taxErr"></span>
     </form>
     <div id="taxSuggest"></div>
@@ -158,7 +158,7 @@ async function renderSuggestion(el, fiscalYear, adjustments, container) {
 
   if (ok && ociClosing === 0) return;
   if (ok) {
-    el.innerHTML = `<div class="card" style="background:#eef7ee;border-color:#8fbf8f;margin-top:16px">
+    el.innerHTML = `<div class="card" style="background:#e5f9ee;border-color:#b8e8cc;margin-top:16px">
       <p><b>유보 검증 ✓</b> 매도가능증권평가익 유보 기말잔액 <b>${fmt(closingReserve)}</b> = −(평가익 잔액 ${fmt(ociClosing)}) — 정합합니다.</p>
     </div>`;
     return;
@@ -168,7 +168,7 @@ async function renderSuggestion(el, fiscalYear, adjustments, container) {
   if (reversed > 0) pairs.push({ label: '전기 평가익 환입분 추인', amount: reversed, kind: 'reverse' });
   if (recognized > 0) pairs.push({ label: '당기 평가익 계상분', amount: recognized, kind: 'recognize' });
 
-  el.innerHTML = `<div class="card" style="background:#fff8e1;border-color:#e0c060;margin-top:16px">
+  el.innerHTML = `<div class="card" style="background:#fff4e0;border-color:#f5cf8a;margin-top:16px">
     <p><b>확인 필요:</b> 매도가능증권평가익 유보 잔액이 맞지 않습니다.</p>
     <table style="margin:8px 0">
       <tr><th>항목</th><th>금액(원)</th></tr>

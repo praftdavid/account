@@ -128,17 +128,17 @@ export async function renderCashFlow(container) {
     ${section.rows.length
       ? section.rows.map((r) => `<tr><td>　${esc(r.label)}</td><td class="num">${fmt(r.cf)}</td></tr>`).join('')
       : `<tr><td class="note">　${emptyNote}</td><td></td></tr>`}
-    <tr><td><b>${title} 합계</b></td><td class="num"><b>${fmt(section.total)}</b></td></tr>`;
+    <tr class="sec"><td>${title} 합계</td><td class="num">${fmt(section.total)}</td></tr>`;
 
   const body = `
     <tr class="sec"><td>Ⅰ. 영업활동현금흐름</td><td class="num"></td></tr>
     ${operatingRows.map((r) => `<tr${r.bold ? ' style="font-weight:600"' : ''}><td>　${esc(r.label)}</td><td class="num">${fmt(r.cf)}</td></tr>`).join('')}
-    <tr><td><b>영업활동현금흐름 합계</b></td><td class="num"><b>${fmt(operatingTotal)}</b></td></tr>
+    <tr class="sec"><td>영업활동현금흐름 합계</td><td class="num">${fmt(operatingTotal)}</td></tr>
     ${sectionHtml('Ⅱ. 투자활동현금흐름', investing, '해당 기간 중 투자활동 거래가 없습니다.')}
     ${sectionHtml('Ⅲ. 재무활동현금흐름', financing, '해당 기간 중 재무활동 거래가 없습니다.')}
-    <tr class="sec"><td><b>Ⅳ. 현금의 증가(감소) (Ⅰ+Ⅱ+Ⅲ)</b></td><td class="num"><b>${fmt(netChange)}</b></td></tr>
+    <tr class="tot"><td>Ⅳ. 현금의 증가(감소) (Ⅰ+Ⅱ+Ⅲ)</td><td class="num">${fmt(netChange)}</td></tr>
     <tr><td>Ⅴ. 기초의 현금</td><td class="num">${fmt(openingCash)}</td></tr>
-    <tr><td><b>Ⅵ. 기말의 현금 (Ⅳ+Ⅴ)</b></td><td class="num"><b>${fmt(openingCash + netChange)}</b></td></tr>
+    <tr class="tot"><td>Ⅵ. 기말의 현금 (Ⅳ+Ⅴ)</td><td class="num">${fmt(openingCash + netChange)}</td></tr>
   `;
 
   container.innerHTML = `<div class="card">${asOfDatePickerHtml('cfAsOf', asOfDate, years)}</div>

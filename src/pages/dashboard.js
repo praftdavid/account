@@ -68,12 +68,12 @@ export async function renderDashboard(container) {
       const 자본h = Math.round((Math.max(0, r.자본) / maxTotal) * CHART_H);
       const label = `${r.date.slice(2, 4)}.${r.date.slice(5, 7)}`;
       return `<div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:44px">
-        <div style="font-size:10px;color:#666;margin-bottom:4px;white-space:nowrap">${fmt(total)}</div>
-        <div style="display:flex;flex-direction:column-reverse;justify-content:flex-start;height:${CHART_H}px;width:28px;background:#f5f6fa;border-radius:3px 3px 0 0;overflow:hidden">
+        <div style="font-size:10px;color:var(--text-mute);margin-bottom:4px;white-space:nowrap">${fmt(total)}</div>
+        <div style="display:flex;flex-direction:column-reverse;justify-content:flex-start;height:${CHART_H}px;width:28px;background:var(--bg);border-radius:3px 3px 0 0;overflow:hidden">
           <div style="height:${부채h}px;background:var(--navy)"></div>
           <div style="height:${자본h}px;background:var(--blue);opacity:.55"></div>
         </div>
-        <div style="font-size:11px;color:#555;margin-top:6px">${label}</div>
+        <div style="font-size:11px;color:var(--text-sub);margin-top:6px">${label}</div>
       </div>`;
     })
     .join('');

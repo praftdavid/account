@@ -86,7 +86,7 @@ export async function renderSecuritiesValuation(container) {
     if (raw === '') { deltaCell.textContent = ''; return; }
     const { delta } = computeRevaluation(lot, Number(raw));
     deltaCell.textContent = fmt(delta);
-    deltaCell.style.color = delta > 0 ? '#b3261e' : delta < 0 ? '#1f4fd8' : 'inherit';
+    deltaCell.style.color = delta > 0 ? '#d1303d' : delta < 0 ? '#3182f6' : 'inherit';
   };
 
   // 잔고증명서 PDF를 올리면 종목별 평가금액 입력칸을 자동으로 채운다. 이 문서엔 종목코드가 없어서

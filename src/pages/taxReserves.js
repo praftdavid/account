@@ -50,7 +50,7 @@ export async function renderTaxReserves(container) {
     <div style="overflow-x:auto"><table id="resTable">
       <tr><th>항목</th><th>기초잔액</th><th>당기 증가</th><th>당기 감소</th><th>기말잔액</th><th>구분</th></tr>
       ${rows || '<tr><td colspan="6" class="note">유보로 처분된 세무조정이 없습니다.</td></tr>'}
-      ${ledger.length ? `<tr><td><b>합계</b></td><td class="num"><b>${fmt(total.opening)}</b></td><td class="num"><b>${fmt(total.increase)}</b></td><td class="num"><b>${fmt(total.decrease)}</b></td><td class="num"><b>${fmt(total.closing)}</b></td><td></td></tr>` : ''}
+      ${ledger.length ? `<tr class="tot"><td>합계</td><td class="num">${fmt(total.opening)}</td><td class="num">${fmt(total.increase)}</td><td class="num">${fmt(total.decrease)}</td><td class="num">${fmt(total.closing)}</td><td></td></tr>` : ''}
     </table></div>
     ${ledger.some((r) => r.closing !== 0)
       ? `<p class="note" style="margin-top:12px">기말 잔액이 남은 항목은 <b>${year + 1}년 신고 시 기초잔액으로 이월</b>됩니다. 관련 자산을 처분하는 해에 반대 방향으로 조정해 추인하세요.</p>`

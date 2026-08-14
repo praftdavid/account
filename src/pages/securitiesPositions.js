@@ -88,7 +88,7 @@ export async function renderSecuritiesPositions(container) {
         <td class="num">${fmt(p.quantity)}</td>
         <td class="num">${fmt(p.cost)}</td>
         <td class="num">${p.fair === null ? '–' : fmt(p.fair)}</td>
-        <td class="num" style="color:${gain === null ? 'inherit' : gain >= 0 ? '#b3261e' : '#1f4fd8'}">${gain === null ? '–' : fmt(gain)}</td>
+        <td class="num" style="color:${gain === null ? 'inherit' : gain >= 0 ? '#d1303d' : '#3182f6'}">${gain === null ? '–' : fmt(gain)}</td>
         <td class="num">${rate === null ? '–' : `${rate >= 0 ? '+' : ''}${rate.toFixed(1)}%`}</td>
         <td class="num">${pct.toFixed(1)}%</td>
       </tr>`;
@@ -128,13 +128,13 @@ export async function renderSecuritiesPositions(container) {
     <div style="overflow-x:auto"><table id="posTable">
       <tr><th>계좌</th><th>종목명</th><th>종목코드</th><th>수량</th><th>취득원가(원)</th><th>평가금액(원)</th><th>평가이익(원)</th><th>수익률</th><th>비중</th></tr>
       ${rows || '<tr><td colspan="9" class="note">해당 기준일에 보유 종목이 없습니다.</td></tr>'}
-      ${visible.length ? `<tr>
-        <td colspan="4"><b>합계${selectedAcct === 'all' ? '' : ' (선택 계좌)'}</b></td>
-        <td class="num"><b>${fmt(shownCost)}</b></td>
-        <td class="num"><b>${isSnapshot ? fmt(shownFair) : '–'}</b></td>
-        <td class="num"><b>${isSnapshot ? fmt(shownGain) : '–'}</b></td>
-        <td class="num"><b>${isSnapshot && shownCost > 0 ? `${shownGain >= 0 ? '+' : ''}${((shownGain / shownCost) * 100).toFixed(1)}%` : '–'}</b></td>
-        <td class="num"><b>100.0%</b></td>
+      ${visible.length ? `<tr class="tot">
+        <td colspan="4">합계${selectedAcct === 'all' ? '' : ' (선택 계좌)'}</td>
+        <td class="num">${fmt(shownCost)}</td>
+        <td class="num">${isSnapshot ? fmt(shownFair) : '–'}</td>
+        <td class="num">${isSnapshot ? fmt(shownGain) : '–'}</td>
+        <td class="num">${isSnapshot && shownCost > 0 ? `${shownGain >= 0 ? '+' : ''}${((shownGain / shownCost) * 100).toFixed(1)}%` : '–'}</td>
+        <td class="num">100.0%</td>
       </tr>` : ''}
     </table></div>
 

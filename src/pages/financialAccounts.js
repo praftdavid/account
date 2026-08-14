@@ -27,7 +27,7 @@ export async function renderFinancialAccounts(container) {
         <td>${esc(a.accounts ? `${a.accounts.account_code} ${a.accounts.account_name}` : '')}</td>
         <td class="c">
           <button class="btn sm ghost" data-edit="${a.fin_account_id}">수정</button>
-          <button class="btn sm ${a.is_active ? 'danger' : ''}" data-toggle="${a.fin_account_id}">${a.is_active ? '비활성화' : '활성화'}</button>
+          <button class="btn sm ghost" data-toggle="${a.fin_account_id}">${a.is_active ? '비활성화' : '활성화'}</button>
         </td>
       </tr>`
     )

@@ -31,7 +31,7 @@ export async function renderBalanceSnapshots(container) {
     <form class="toolbar" id="snapForm">
       <div><label class="note">기준일</label><br><input type="date" id="f_date" value="${todayStr()}" required></div>
       <div><label class="note">증명서상 잔액</label><br><input type="number" id="f_balance" required></div>
-      <button class="btn" type="submit">등록/갱신</button>
+      <div><label class="note">&nbsp;</label><br><button class="btn" type="submit">등록/갱신</button></div>
       <span class="err" id="snapErr"></span>
     </form>
     <div id="snapBody"><p class="note">불러오는 중…</p></div>

@@ -118,11 +118,11 @@ export async function renderTaxCredits(container) {
     <div style="overflow-x:auto"><table id="crTable">
       <tr><th>구분</th><th>금액(원)</th><th>국외원천소득</th><th>납부일</th><th>비고</th><th></th></tr>
       ${rows || '<tr><td colspan="6" class="note">등록된 내역이 없습니다.</td></tr>'}
-      ${list.length ? `<tr><td><b>합계</b></td><td class="num"><b>${fmt(registered)}</b></td><td colspan="4"></td></tr>` : ''}
+      ${list.length ? `<tr class="tot"><td>합계</td><td class="num">${fmt(registered)}</td><td colspan="4"></td></tr>` : ''}
     </table></div>
 
     ${suggestions.length ? `
-    <div class="card" style="background:#fff8e1;border-color:#e0c060;margin-top:16px">
+    <div class="card" style="background:#fff4e0;border-color:#f5cf8a;margin-top:16px">
       <p><b>확인 필요:</b> 선납세금 장부에 있는데 등록되지 않은 항목 ${suggestions.length}건을 찾았습니다. 적요를 보고 아래처럼 분류를 제안합니다 — 배당이면 해외 배당 원천징수(외국납부세액), 그 외면 국내 원천징수(원천납부)로 봤습니다.</p>
       <table style="margin:8px 0">
         <tr><th>일자</th><th>적요</th><th>금액</th><th>제안 구분</th><th>국외원천소득</th></tr>
@@ -140,7 +140,7 @@ export async function renderTaxCredits(container) {
       <div><label class="note">국외원천소득 <span class="note">(외국납부세액만)</span></label><br><input type="number" id="c_foreign"></div>
       <div><label class="note">납부일</label><br><input type="date" id="c_date"></div>
       <div><label class="note">비고</label><br><input type="text" id="c_memo"></div>
-      <button class="btn" type="submit">추가</button>
+      <div><label class="note">&nbsp;</label><br><button class="btn" type="submit">추가</button></div>
       <span class="err" id="crErr"></span>
     </form>
 

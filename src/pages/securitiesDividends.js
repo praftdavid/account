@@ -57,7 +57,7 @@ export async function renderSecuritiesDividends(container) {
     <div style="overflow-x:auto"><table>
       <tr><th>일자</th><th>계좌</th><th>종목</th><th>총배당금</th><th>원천세</th><th>실수령</th><th>통화</th><th>상태</th></tr>
       ${rows || `<tr><td colspan="8" class="note">${selectedYear}년 배당금 내역이 없습니다.</td></tr>`}
-      ${txns?.length ? `<tr><td colspan="3"><b>합계</b></td><td class="num"><b>${fmt(totalGross)}</b></td><td class="num"><b>${fmt(totalTax)}</b></td><td class="num"><b>${fmt(totalGross - totalTax)}</b></td><td colspan="2"></td></tr>` : ''}
+      ${txns?.length ? `<tr class="tot"><td colspan="3">합계</td><td class="num">${fmt(totalGross)}</td><td class="num">${fmt(totalTax)}</td><td class="num">${fmt(totalGross - totalTax)}</td><td colspan="2"></td></tr>` : ''}
     </table></div>
   </div>`;
 
