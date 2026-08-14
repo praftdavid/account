@@ -56,7 +56,7 @@ export async function renderSecuritiesTrades(container) {
       const gainLoss = t.txn_type === 'sell' && t.generated_entry_id ? gainLossByEntry.get(t.generated_entry_id) : null;
       return `<tr>
         <td class="c">${esc(t.txn_date)}</td>
-        <td>${esc(acctName(t.fin_account_id))}</td>
+        <td class="c">${esc(acctName(t.fin_account_id))}</td>
         <td>${t.txn_type === 'buy' ? '매수' : '매도'}</td>
         <td>${esc(t.name || t.ticker || '')}</td>
         <td class="num">${fmt(t.quantity)}</td>

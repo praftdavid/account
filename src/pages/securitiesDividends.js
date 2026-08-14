@@ -32,7 +32,7 @@ export async function renderSecuritiesDividends(container) {
     .map(
       (t) => `<tr>
         <td class="c">${esc(t.txn_date)}</td>
-        <td>${esc(acctName(t.fin_account_id))}</td>
+        <td class="c">${esc(acctName(t.fin_account_id))}</td>
         <td>${esc(t.name || t.ticker || '')}</td>
         <td class="num">${fmt(t.gross_usd)}</td>
         <td class="num">${fmt(t.tax_usd)}</td>

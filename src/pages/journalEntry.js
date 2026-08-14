@@ -1,6 +1,6 @@
 import { supabase } from '../lib/supabaseClient.js';
 import { fetchAccounts, fetchPeriodIdForDate, fetchMaxEntryNo, formatEntryNo } from '../lib/data.js';
-import { todayStr } from '../lib/util.js';
+import { todayStr, wireThousandsInput, parseThousands } from '../lib/util.js';
 import { CATEGORY_ORDER, leafAccounts, categoryOptionsHtml, accountOptionsHtml } from '../lib/accountPicker.js';
 
 export async function renderJournalEntry(container) {
@@ -58,7 +58,7 @@ export async function renderJournalEntry(container) {
         <option value="in">입금(증가)</option>
         <option value="out">출금(감소)</option>
       </select>
-      <input class="l_amt" type="number" min="0" step="1" placeholder="금액">
+      <input class="l_amt" type="text" inputmode="numeric" placeholder="금액">
       <span class="l_side note"></span>
       <select class="l_seg">
         <option value="">부문(선택)</option>
@@ -68,6 +68,7 @@ export async function renderJournalEntry(container) {
       </select>
       <button type="button" class="btn sm danger removeLine">삭제</button>`;
     linesBox.appendChild(row);
+    wireThousandsInput(row.querySelector('.l_amt'));
     updateSideLabel(row);
   }
   addRow();
@@ -93,7 +94,7 @@ export async function renderJournalEntry(container) {
     let filled = 0;
     linesBox.querySelectorAll('.line-row').forEach((r) => {
       const accountId = r.querySelector('.l_acct').value;
-      const amt = Number(r.querySelector('.l_amt').value) || 0;
+      const amt = parseThousands(r.querySelector('.l_amt').value);
       if (!accountId || !amt) return;
       filled++;
       const side = computeSide(accountId, r.querySelector('.l_dir').value);
@@ -126,7 +127,7 @@ export async function renderJournalEntry(container) {
     const rows = [...linesBox.querySelectorAll('.line-row')]
       .map((r) => {
         const accountId = r.querySelector('.l_acct').value || null;
-        const amt = Number(r.querySelector('.l_amt').value) || 0;
+        const amt = parseThousands(r.querySelector('.l_amt').value);
         const side = accountId ? computeSide(accountId, r.querySelector('.l_dir').value) : null;
         return {
           account_id: accountId,

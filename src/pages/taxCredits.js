@@ -1,6 +1,6 @@
 import { supabase } from '../lib/supabaseClient.js';
 import { fetchFiscalYears } from '../lib/data.js';
-import { esc, fmt } from '../lib/util.js';
+import { esc, fmt, wireThousandsInput, parseThousands } from '../lib/util.js';
 import { exportTableToExcel, exportButtonHtml } from '../lib/exportExcel.js';
 import { CREDIT_TYPES, PREPAID_TYPES } from '../lib/taxAdjust.js';
 
@@ -136,8 +136,8 @@ export async function renderTaxCredits(container) {
     <h3 style="margin-top:20px">추가</h3>
     <form class="toolbar" id="crForm">
       <div><label class="note">구분</label><br><select id="c_type">${CREDIT_TYPES.map((t) => `<option>${t}</option>`).join('')}</select></div>
-      <div><label class="note">금액</label><br><input type="number" id="c_amount" required></div>
-      <div><label class="note">국외원천소득 <span class="note">(외국납부세액만)</span></label><br><input type="number" id="c_foreign"></div>
+      <div><label class="note">금액</label><br><input type="text" inputmode="numeric" id="c_amount" required></div>
+      <div><label class="note">국외원천소득 <span class="note">(외국납부세액만)</span></label><br><input type="text" inputmode="numeric" id="c_foreign"></div>
       <div><label class="note">납부일</label><br><input type="date" id="c_date"></div>
       <div><label class="note">비고</label><br><input type="text" id="c_memo"></div>
       <div><label class="note">&nbsp;</label><br><button class="btn" type="submit">추가</button></div>
@@ -162,13 +162,15 @@ export async function renderTaxCredits(container) {
   });
   document.getElementById('crExport').onclick = () =>
     exportTableToExcel(document.getElementById('crTable'), `기납부세액_${year}.xlsx`);
+  wireThousandsInput(document.getElementById('c_amount'));
+  wireThousandsInput(document.getElementById('c_foreign'));
 
   document.getElementById('crForm').addEventListener('submit', async (ev) => {
     ev.preventDefault();
     const errEl = document.getElementById('crErr');
     errEl.textContent = '';
     const type = document.getElementById('c_type').value;
-    const foreign = Number(document.getElementById('c_foreign').value) || null;
+    const foreign = parseThousands(document.getElementById('c_foreign').value) || null;
     if (type === '외국납부세액' && !foreign) {
       errEl.textContent = '외국납부세액은 공제한도 계산을 위해 국외원천소득이 필요합니다.';
       return;
@@ -176,7 +178,7 @@ export async function renderTaxCredits(container) {
     const { error: insErr } = await supabase.from('tax_credits').insert({
       fiscal_year: year,
       credit_type: type,
-      amount: Number(document.getElementById('c_amount').value) || 0,
+      amount: parseThousands(document.getElementById('c_amount').value),
       foreign_income: type === '외국납부세액' ? foreign : null,
       paid_date: document.getElementById('c_date').value || null,
       memo: document.getElementById('c_memo').value.trim() || null,

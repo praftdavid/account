@@ -44,7 +44,7 @@ export async function renderSecuritiesFx(container) {
     .map(
       (t) => `<tr>
         <td class="c">${esc(t.txn_date)}</td>
-        <td>${esc(acctName(t.fin_account_id))}</td>
+        <td class="c">${esc(acctName(t.fin_account_id))}</td>
         <td>${esc(t.memo ?? '')}</td>
         <td class="num">${Number(t.amount) > 0 ? fmt(t.amount) : ''}</td>
         <td class="num">${Number(t.amount) < 0 ? fmt(-t.amount) : ''}</td>

@@ -1,6 +1,6 @@
 import { supabase } from '../lib/supabaseClient.js';
 import { fetchFiscalYears } from '../lib/data.js';
-import { esc, fmt } from '../lib/util.js';
+import { esc, fmt, wireThousandsInput, parseThousands } from '../lib/util.js';
 import { exportTableToExcel, exportButtonHtml } from '../lib/exportExcel.js';
 import { ALL_TYPES, DISPOSALS, isAddition, buildReserveLedger } from '../lib/taxAdjust.js';
 
@@ -67,7 +67,7 @@ export async function renderTaxAdjustments(container) {
     <form class="toolbar" id="taxForm">
       <div><label class="note">항목</label><br><input type="text" id="f_item" placeholder="예: 매도가능증권평가익" required style="min-width:200px"></div>
       <div><label class="note">구분</label><br><select id="f_type">${ALL_TYPES.map((t) => `<option>${t}</option>`).join('')}</select></div>
-      <div><label class="note">금액</label><br><input type="number" id="f_amount" required></div>
+      <div><label class="note">금액</label><br><input type="text" inputmode="numeric" id="f_amount" required></div>
       <div><label class="note">소득처분</label><br><select id="f_disposal">${DISPOSALS.map((d) => `<option>${d}</option>`).join('')}</select></div>
       <div><label class="note">관련 계정(선택)</label><br><select id="f_account"><option value="">(없음)</option>${(accounts ?? []).map((a) => `<option value="${a.account_id}">${esc(a.account_code)} ${esc(a.account_name)}</option>`).join('')}</select></div>
       <div><label class="note">비고</label><br><input type="text" id="f_memo"></div>
@@ -83,6 +83,7 @@ export async function renderTaxAdjustments(container) {
   });
   document.getElementById('taxExport').onclick = () =>
     exportTableToExcel(document.getElementById('taxTableAdd'), `소득금액조정합계표_${year}.xlsx`);
+  wireThousandsInput(document.getElementById('f_amount'));
 
   document.getElementById('taxForm').addEventListener('submit', async (ev) => {
     ev.preventDefault();
@@ -92,7 +93,7 @@ export async function renderTaxAdjustments(container) {
       fiscal_year: year,
       item_name: document.getElementById('f_item').value.trim(),
       adjust_type: document.getElementById('f_type').value,
-      amount: Number(document.getElementById('f_amount').value) || 0,
+      amount: parseThousands(document.getElementById('f_amount').value),
       disposal: document.getElementById('f_disposal').value,
       account_id: Number(document.getElementById('f_account').value) || null,
       memo: document.getElementById('f_memo').value.trim() || null,

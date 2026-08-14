@@ -22,7 +22,7 @@ nav button{border:none;background:none;padding:12px 18px;font-size:14px;cursor:p
 nav button:hover{color:var(--text);}
 nav button.on{border-bottom-color:var(--brand);font-weight:700;color:var(--brand);}
 nav .nav-groups{background:var(--bg);border-bottom:1px solid var(--bd);}
-nav .nav-groups button{padding:9px 16px;font-size:12px;color:var(--text-sub);border-bottom:2px solid transparent;}
+nav .nav-groups button{padding:9px 16px;color:var(--text-sub);border-bottom:2px solid transparent;}
 nav .nav-groups button.on{background:var(--surface);border-bottom-color:var(--brand);color:var(--brand);font-weight:700;}
 nav .nav-items{border-bottom:1px solid var(--bd);}
 main{padding:24px 20px;max-width:1200px;margin:0 auto;}

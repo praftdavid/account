@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabaseClient.js';
-import { esc, fmt, todayStr } from '../lib/util.js';
+import { esc, fmt, todayStr, wireThousandsInput, parseThousands } from '../lib/util.js';
 
 let selectedFinAccountId = null;
 
@@ -30,7 +30,7 @@ export async function renderBalanceSnapshots(container) {
     </div>
     <form class="toolbar" id="snapForm">
       <div><label class="note">기준일</label><br><input type="date" id="f_date" value="${todayStr()}" required></div>
-      <div><label class="note">증명서상 잔액</label><br><input type="number" id="f_balance" required></div>
+      <div><label class="note">증명서상 잔액</label><br><input type="text" inputmode="numeric" id="f_balance" required></div>
       <div><label class="note">&nbsp;</label><br><button class="btn" type="submit">등록/갱신</button></div>
       <span class="err" id="snapErr"></span>
     </form>
@@ -42,6 +42,8 @@ export async function renderBalanceSnapshots(container) {
     renderBalanceSnapshots(container);
   });
 
+  wireThousandsInput(document.getElementById('f_balance'));
+
   if (!account) return;
 
   document.getElementById('snapForm').addEventListener('submit', async (ev) => {
@@ -52,7 +54,7 @@ export async function renderBalanceSnapshots(container) {
       {
         fin_account_id: account.fin_account_id,
         as_of_date: document.getElementById('f_date').value,
-        certified_balance: Number(document.getElementById('f_balance').value) || 0,
+        certified_balance: parseThousands(document.getElementById('f_balance').value),
       },
       { onConflict: 'fin_account_id,as_of_date' }
     );

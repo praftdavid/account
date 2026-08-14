@@ -1,6 +1,6 @@
 import { supabase } from '../lib/supabaseClient.js';
 import { fetchAccounts, fetchPeriodIdForDate, fetchFiscalYears, fetchMaxEntryNo, formatEntryNo } from '../lib/data.js';
-import { esc, fmt, todayStr } from '../lib/util.js';
+import { esc, fmt, todayStr, wireThousandsInput, parseThousands } from '../lib/util.js';
 import { halfYearEndPickerHtml, wireHalfYearEndPicker } from '../lib/asOfDate.js';
 import { computeRevaluation } from '../lib/securitiesJournal.js';
 import { parseKiwoomBalanceCert, normalizeName } from '../lib/parsers/kiwoomBalanceCert.js';
@@ -45,7 +45,7 @@ export async function renderSecuritiesValuation(container) {
         <td class="num">${fmt(l.quantity)}</td>
         <td class="num">${fmt(l.cost_basis)}</td>
         <td class="num">${l.unrealized_oci ? fmt(l.unrealized_oci) : '–'}</td>
-        <td><input type="number" class="valInput" placeholder="평가금액(원)" value="${l.fair_value ?? ''}" style="width:140px"></td>
+        <td><input type="text" inputmode="numeric" class="valInput" placeholder="평가금액(원)" value="${l.fair_value != null ? Number(l.fair_value).toLocaleString() : ''}" style="width:140px"></td>
         <td class="valDelta num"></td>
       </tr>`
     )
@@ -84,7 +84,7 @@ export async function renderSecuritiesValuation(container) {
     const deltaCell = tr.querySelector('.valDelta');
     const raw = input.value;
     if (raw === '') { deltaCell.textContent = ''; return; }
-    const { delta } = computeRevaluation(lot, Number(raw));
+    const { delta } = computeRevaluation(lot, parseThousands(raw));
     deltaCell.textContent = fmt(delta);
     deltaCell.style.color = delta > 0 ? '#d1303d' : delta < 0 ? '#3182f6' : 'inherit';
   };
@@ -119,7 +119,7 @@ export async function renderSecuritiesValuation(container) {
       if (!h) continue;
       matched++;
       const input = tr.querySelector('.valInput');
-      input.value = h.fairValue;
+      input.value = Number(h.fairValue).toLocaleString();
       recompute(tr);
     }
 
@@ -135,6 +135,7 @@ export async function renderSecuritiesValuation(container) {
   });
 
   container.querySelectorAll('.valInput').forEach((input) => {
+    wireThousandsInput(input);
     input.addEventListener('input', () => recompute(input.closest('tr')));
     recompute(input.closest('tr'));
   });
@@ -171,7 +172,7 @@ export async function renderSecuritiesValuation(container) {
       const raw = tr.querySelector('.valInput').value;
       if (raw === '') continue;
       const lot = lots.find((l) => l.lot_id === Number(tr.dataset.lot));
-      const fairValue = Number(raw);
+      const fairValue = parseThousands(raw);
       const { newOci, delta } = computeRevaluation(lot, fairValue);
       if (delta !== 0) changes.push({ lot, fairValue, newOci, delta });
     }
