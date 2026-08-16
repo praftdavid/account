@@ -89,6 +89,9 @@ select.acct{min-width:180px;}
   .line-row{grid-template-columns:1fr;gap:6px;background:var(--bg);border:1px solid var(--bd);border-radius:var(--radius-sm);padding:10px;margin-bottom:10px;}
   .line-row .l_side{text-align:left;}
   .line-row .removeLine{width:100%;}
+  /* iOS Safari는 포커스되는 입력칸 글자가 16px 미만이면 user-scalable=no를 무시하고 강제로
+     확대한다 — 핀치 줌은 막아도 이거 때문에 탭할 때마다 화면이 튀면 도로 완성도가 떨어져 보인다. */
+  select,input[type=text],input[type=number],input[type=date],input[type=email],input[type=password],input[type=search]{font-size:16px;}
 }
 .login-wrap{display:flex;align-items:center;justify-content:center;min-height:80vh;}
 .login-card{background:var(--surface);border:none;box-shadow:var(--shadow-md);border-radius:20px;padding:36px;width:320px;}
