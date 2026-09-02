@@ -1,0 +1,105 @@
+/* 토스 디자인 가이드 기반 개편(v1.0.0) — 팔레트·타이포·컴포넌트 표면만 갱신, 클래스명은 전부 그대로
+   유지해 페이지 JS/마크업은 손대지 않았다. --navy/--blue/--bd는 대시보드·분개입력 화면이 인라인
+   style="var(--navy)" 형태로 직접 참조하므로 변수 "이름"은 유지하고 값만 새 팔레트로 교체했다. */
+:root{
+  --brand:#3182F6;--brand-dark:#2272eb;--brand-light:#eaf2ff;
+  --navy:#191F28;--blue:#3182F6;--lblue:#eef3fc;
+  --bg:#f2f4f6;--bd:#e5e8eb;
+  --red:#f04452;--green:#00c471;--amber:#ff9500;
+  --text:#191f28;--text-sub:#4e5968;--text-mute:#8b95a1;
+  --surface:#fff;
+  --radius:16px;--radius-sm:10px;
+  --shadow:0 2px 10px rgba(25,31,40,.06);--shadow-md:0 4px 16px rgba(25,31,40,.09);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Pretendard','Apple SD Gothic Neo','Malgun Gothic',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased;}
+header{background:var(--surface);color:var(--text);padding:14px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;border-bottom:1px solid var(--bd);}
+header h1{font-size:17px;font-weight:700;letter-spacing:-.2px;}
+header .sub{font-size:12px;color:var(--text-mute);opacity:1;margin-left:auto;display:flex;align-items:center;gap:10px;}
+nav{background:var(--surface);display:flex;flex-direction:column;}
+nav .nav-row{display:flex;flex-wrap:wrap;padding:0 12px;}
+nav button{border:none;background:none;padding:12px 18px;font-size:14px;cursor:pointer;border-bottom:2px solid transparent;font-family:inherit;color:var(--text-mute);transition:color .15s ease;}
+nav button:hover{color:var(--text);}
+nav button.on{border-bottom-color:var(--brand);font-weight:700;color:var(--brand);}
+nav .nav-groups{background:var(--bg);border-bottom:1px solid var(--bd);}
+nav .nav-groups button{padding:9px 16px;color:var(--text-sub);border-bottom:2px solid transparent;}
+nav .nav-groups button.on{background:var(--surface);border-bottom-color:var(--brand);color:var(--brand);font-weight:700;}
+nav .nav-items{border-bottom:1px solid var(--bd);}
+main{padding:24px 20px;max-width:1200px;margin:0 auto;}
+.card{background:var(--surface);border:1px solid var(--bd);box-shadow:var(--shadow);border-radius:var(--radius);padding:22px 24px;margin-bottom:18px;}
+.card h2{font-size:16px;font-weight:700;color:var(--text);margin-bottom:14px;letter-spacing:-.1px;line-height:1.4;}
+.card h3{font-size:14px;font-weight:700;color:var(--text);margin-bottom:10px;letter-spacing:-.05px;line-height:1.4;}
+label{font-size:13px;color:var(--text-sub);font-weight:500;}
+table{border-collapse:collapse;width:100%;font-size:13px;}
+th{background:var(--bg);color:var(--text-sub);padding:9px 10px;font-weight:600;white-space:nowrap;text-align:left;border-bottom:1px solid var(--bd);}
+th.num,th.c{text-align:center;}
+td{border:none;border-bottom:1px solid var(--bg);padding:9px 10px;}
+tr:hover td{background:var(--bg);}
+tr:nth-child(even) td{background:transparent;}
+tr:nth-child(even):hover td{background:var(--bg);}
+tr.inactive td{opacity:.45;}
+td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;}
+td.c{text-align:center;white-space:nowrap;}
+tr.sec td{background:var(--lblue);font-weight:700;}
+tr.sec:hover td{background:var(--lblue);}
+tr.tot td{background:var(--lblue);font-weight:700;border-top:2px solid var(--brand);border-bottom:none;}
+tr.tot:hover td{background:var(--lblue);}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:18px;}
+.kpi{background:var(--surface);border:1px solid var(--bd);box-shadow:var(--shadow);border-radius:var(--radius);padding:18px 20px;}
+.kpi .t{font-size:12px;color:var(--text-mute);font-weight:500;}
+.kpi .v{font-size:24px;font-weight:700;color:var(--text);margin-top:6px;font-variant-numeric:tabular-nums;letter-spacing:-.3px;}
+select,input[type=text],input[type=number],input[type=date],input[type=email],input[type=password],input[type=search]{
+  padding:8px 12px;border:1px solid transparent;background:var(--bg);border-radius:var(--radius-sm);font-family:inherit;font-size:13px;color:var(--text);height:36px;transition:box-shadow .15s ease,background .15s ease;
+}
+select:focus,input[type=text]:focus,input[type=number]:focus,input[type=date]:focus,input[type=email]:focus,input[type=password]:focus,input[type=search]:focus{outline:none;background:var(--surface);border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-light);}
+form.entry{display:grid;grid-template-columns:repeat(12,1fr);gap:10px;align-items:end;}
+form.entry label{display:block;margin-bottom:5px;}
+form.entry input,form.entry select{width:100%;}
+.btn{background:var(--brand);color:#fff;border:none;padding:10px 20px;border-radius:var(--radius-sm);cursor:pointer;font-family:inherit;font-size:13px;font-weight:600;line-height:1.2;vertical-align:middle;text-align:center;transition:background .15s ease,transform .05s ease;}
+.btn:hover{background:var(--brand-dark);}
+.btn:active{transform:scale(.98);}
+.btn:disabled{background:#c3c9d1;cursor:not-allowed;}
+.btn.ghost{background:var(--surface);color:var(--brand);border:1px solid var(--bd);}
+.btn.ghost:hover{background:var(--brand-light);border-color:var(--brand);}
+.btn.danger{background:var(--red);}
+.btn.danger:hover{background:#d63a46;}
+.btn.sm{padding:6px 12px;font-size:12px;}
+td .btn{vertical-align:middle;}
+td .btn+.btn{margin-left:6px;}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;}
+.badge.ok{background:#e5f9ee;color:#00964f;}
+.badge.bad{background:#fdeaec;color:#d1303d;}
+.badge.draft{background:#fff4e0;color:#c17600;}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:center;}
+.toolbar .btn{height:36px;}
+input[type=checkbox],input[type=radio]{accent-color:var(--brand);width:16px;height:16px;cursor:pointer;vertical-align:middle;}
+input[type=file]{font-family:inherit;font-size:13px;color:var(--text-sub);}
+input[type=file]::file-selector-button{
+  margin-right:10px;padding:8px 14px;border:1px solid var(--bd);border-radius:var(--radius-sm);
+  background:var(--surface);color:var(--brand);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:background .15s ease;
+}
+input[type=file]::file-selector-button:hover{background:var(--brand-light);}
+.note{font-size:12px;color:var(--text-mute);margin-top:8px;line-height:1.7;}
+.err{font-size:12px;color:var(--red);margin-top:8px;font-weight:500;}
+select.acct{min-width:180px;}
+.line-row{display:grid;grid-template-columns:1fr 2fr 1fr 1fr 0.6fr 1fr auto;gap:8px;align-items:center;margin-bottom:6px;}
+.line-row select,.line-row input{width:100%;}
+.line-row .l_side{text-align:center;white-space:nowrap;}
+@media(max-width:700px){
+  .line-row{grid-template-columns:1fr;gap:6px;background:var(--bg);border:1px solid var(--bd);border-radius:var(--radius-sm);padding:10px;margin-bottom:10px;}
+  .line-row .l_side{text-align:left;}
+  .line-row .removeLine{width:100%;}
+  /* iOS Safari는 포커스되는 입력칸 글자가 16px 미만이면 user-scalable=no를 무시하고 강제로
+     확대한다 — 핀치 줌은 막아도 이거 때문에 탭할 때마다 화면이 튀면 도로 완성도가 떨어져 보인다. */
+  select,input[type=text],input[type=number],input[type=date],input[type=email],input[type=password],input[type=search]{font-size:16px;}
+}
+.login-wrap{display:flex;align-items:center;justify-content:center;min-height:80vh;}
+.login-card{background:var(--surface);border:none;box-shadow:var(--shadow-md);border-radius:20px;padding:36px;width:320px;}
+.login-card h2{color:var(--text);font-weight:700;margin-bottom:18px;}
+.login-card label{display:block;margin:10px 0 5px;}
+.login-card input{width:100%;}
+.login-card .btn{width:100%;margin-top:16px;}
+@media(max-width:800px){form.entry{grid-template-columns:repeat(2,1fr);}}
+.bs-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+.bs-col table{width:100%;}
+@media(max-width:760px){.bs-grid{grid-template-columns:1fr;}}
