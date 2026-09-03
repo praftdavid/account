@@ -16,6 +16,8 @@ body{font-family:'Pretendard','Apple SD Gothic Neo','Malgun Gothic',-apple-syste
 header{background:var(--surface);color:var(--text);padding:14px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;border-bottom:1px solid var(--bd);}
 header h1{font-size:17px;font-weight:700;letter-spacing:-.2px;}
 header .sub{font-size:12px;color:var(--text-mute);opacity:1;margin-left:auto;display:flex;align-items:center;gap:10px;}
+header .app-switch{color:var(--text-sub);text-decoration:none;font-weight:600;padding:5px 10px;border-radius:var(--radius-sm);transition:background .15s ease,color .15s ease;}
+header .app-switch:hover{background:var(--brand-light);color:var(--brand);}
 nav{background:var(--surface);display:flex;flex-direction:column;}
 nav .nav-row{display:flex;flex-wrap:wrap;padding:0 12px;}
 nav button{border:none;background:none;padding:12px 18px;font-size:14px;cursor:pointer;border-bottom:2px solid transparent;font-family:inherit;color:var(--text-mute);transition:color .15s ease;}
