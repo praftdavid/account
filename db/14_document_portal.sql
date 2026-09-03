@@ -10,7 +10,7 @@
 -- ---------------------------------------------------------------------
 -- 1. departments (부서 마스터)
 -- ---------------------------------------------------------------------
-CREATE TABLE departments (
+CREATE TABLE IF NOT EXISTS departments (
     dept_id     BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     dept_name   TEXT    NOT NULL,
     dept_code   TEXT,
@@ -23,7 +23,7 @@ COMMENT ON TABLE departments IS '부서 마스터 — 전자결재 기안부서,
 -- ---------------------------------------------------------------------
 -- 2. documents (내부결재문서 / 전자결재)
 -- ---------------------------------------------------------------------
-CREATE TABLE documents (
+CREATE TABLE IF NOT EXISTS documents (
     doc_id        BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     doc_no        TEXT,                              -- 상신 시점에 채번(예: PRAFT-2026-0001). 기안 중엔 NULL
     doc_type      TEXT    NOT NULL DEFAULT '일반기안', -- 자유 텍스트 분류(기안/품의/지출결의/휴가신청 등)
@@ -43,13 +43,13 @@ CREATE TABLE documents (
 );
 COMMENT ON TABLE documents IS '내부결재문서 — 기안(draft)/상신(submitted)/승인(approved)/반려(rejected). 문서번호는 상신 시 채번(연도별 순번)';
 
-CREATE INDEX documents_status_idx ON documents(status);
-CREATE INDEX documents_dept_idx   ON documents(dept_id);
+CREATE INDEX IF NOT EXISTS documents_status_idx ON documents(status);
+CREATE INDEX IF NOT EXISTS documents_dept_idx   ON documents(dept_id);
 
 -- ---------------------------------------------------------------------
 -- 3. regulations (제규정 — 사규·정관·지침 등)
 -- ---------------------------------------------------------------------
-CREATE TABLE regulations (
+CREATE TABLE IF NOT EXISTS regulations (
     reg_id         BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     category       TEXT    NOT NULL,                 -- 정관/규정/지침/서식/기타
     title          TEXT    NOT NULL,
@@ -64,12 +64,12 @@ CREATE TABLE regulations (
 );
 COMMENT ON TABLE regulations IS '제규정 — 사내 규정·정관·지침 게시판. 개정 시 version/effective_date를 갱신하고 이전 내용은 별도 이력 없이 덮어쓴다(단순 CMS)';
 
-CREATE INDEX regulations_category_idx ON regulations(category);
+CREATE INDEX IF NOT EXISTS regulations_category_idx ON regulations(category);
 
 -- ---------------------------------------------------------------------
 -- 4. dept_posts (부서별 업무자료 게시글)
 -- ---------------------------------------------------------------------
-CREATE TABLE dept_posts (
+CREATE TABLE IF NOT EXISTS dept_posts (
     post_id      BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     dept_id      BIGINT  NOT NULL REFERENCES departments(dept_id),
     title        TEXT    NOT NULL,
@@ -81,12 +81,12 @@ CREATE TABLE dept_posts (
 );
 COMMENT ON TABLE dept_posts IS '부서별 업무자료 — 부서 단위 공지·자료 게시판';
 
-CREATE INDEX dept_posts_dept_idx ON dept_posts(dept_id);
+CREATE INDEX IF NOT EXISTS dept_posts_dept_idx ON dept_posts(dept_id);
 
 -- ---------------------------------------------------------------------
 -- 5. attachments (공용 첨부파일 — documents/regulations/dept_posts 공통)
 -- ---------------------------------------------------------------------
-CREATE TABLE attachments (
+CREATE TABLE IF NOT EXISTS attachments (
     attachment_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     target_type   TEXT   NOT NULL CHECK (target_type IN ('document', 'regulation', 'dept_post')),
     target_id     BIGINT NOT NULL,
@@ -98,7 +98,7 @@ CREATE TABLE attachments (
 );
 COMMENT ON TABLE attachments IS '문서포털 공용 첨부파일 — target_type/target_id로 documents·regulations·dept_posts 중 하나를 가리킴(FK 대신 polymorphic 참조, 대상 테이블이 3개라 개별 FK 대신 앱에서 무결성 보장)';
 
-CREATE INDEX attachments_target_idx ON attachments(target_type, target_id);
+CREATE INDEX IF NOT EXISTS attachments_target_idx ON attachments(target_type, target_id);
 
 -- =====================================================================
 -- RLS — 회계 스키마(03_rls_policies.sql)와 동일한 패턴: 로그인 전원 전체 허용
