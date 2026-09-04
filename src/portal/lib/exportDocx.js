@@ -1,7 +1,7 @@
 import { Document, Packer, Paragraph, TextRun, AlignmentType, BorderStyle } from 'docx';
-import { COMPANY, SCOPE_LABEL, docNoLabel } from './letterhead.js';
+import { COMPANY, docNoLabel } from './letterhead.js';
 
-// 인쇄 미리보기(letterheadPrint.js)와 같은 내용·구조를 Word(.docx)로 다시 만든다.
+// 인쇄/화면 미리보기(letterheadPrint.js)와 같은 내용·구조를 Word(.docx)로 다시 만든다.
 // 글자간격은 docx의 letter-spacing 지원이 불안정해서, 한글자씩 띄어써서 시각적으로 맞춘다.
 function spacedOut(text) {
   return text.split('').join(' ');
@@ -15,12 +15,21 @@ function hr() {
 }
 
 export async function exportDocumentToDocx(doc, deptName) {
-  const scopeLabel = SCOPE_LABEL[doc.doc_scope] ?? SCOPE_LABEL.internal;
-  const recipient = doc.recipient?.trim() || (doc.doc_scope === 'external' ? '' : '내부결재');
+  const recipient = doc.recipient?.trim() || (doc.doc_type === '시행문' ? '' : '내부결재');
 
   const bodyParagraphs = doc.body.split('\n').map(
     (line) => new Paragraph({ children: [new TextRun({ text: line || ' ', size: 22 })], spacing: { line: 400 } })
   );
+
+  const issuerParagraphs = doc.issuer_name?.trim()
+    ? [
+        new Paragraph({
+          alignment: AlignmentType.RIGHT,
+          children: [new TextRun({ text: `${COMPANY.name}  ${doc.issuer_name} (인)`, bold: true, size: 22 })],
+          spacing: { before: 400, after: 200 },
+        }),
+      ]
+    : [];
 
   const children = [
     new Paragraph({
@@ -35,7 +44,7 @@ export async function exportDocumentToDocx(doc, deptName) {
     }),
     new Paragraph({
       alignment: AlignmentType.RIGHT,
-      children: [new TextRun({ text: `[${scopeLabel}]`, bold: true, size: 22 })],
+      children: [new TextRun({ text: `[${doc.doc_type}]`, bold: true, size: 22 })],
       spacing: { after: 300 },
     }),
     new Paragraph({
@@ -48,7 +57,8 @@ export async function exportDocumentToDocx(doc, deptName) {
     }),
     hr(),
     ...bodyParagraphs,
-    new Paragraph({ text: '', spacing: { after: 600 } }),
+    ...issuerParagraphs,
+    new Paragraph({ text: '', spacing: { after: issuerParagraphs.length ? 200 : 600 } }),
     new Paragraph({
       children: [new TextRun({ text: `수신자 : ${recipient || '(내부)'}`, size: 22 })],
       spacing: { after: 400 },

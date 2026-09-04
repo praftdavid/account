@@ -6,6 +6,16 @@ import { fetchDepartments } from '../lib/departments.js';
 let mode = 'list'; // 'list' | 'new' | 'edit' | 'view'
 let currentPostId = null;
 let selectedDeptId = null;
+let yearFilter = 'all';
+
+export function resetView() {
+  mode = 'list';
+  currentPostId = null;
+}
+
+function yearOf(dateStr) {
+  return dateStr ? Number(String(dateStr).slice(0, 4)) : null;
+}
 
 async function currentUserEmail() {
   const { data } = await supabase.auth.getUser();
@@ -28,7 +38,7 @@ export async function renderDeptPosts(container) {
 }
 
 async function renderList(container, departments) {
-  const { data: posts, error } = await supabase
+  const { data: allPosts, error } = await supabase
     .from('dept_posts')
     .select('*')
     .eq('dept_id', selectedDeptId)
@@ -39,7 +49,12 @@ async function renderList(container, departments) {
     return;
   }
 
+  const years = [...new Set(allPosts.map((p) => yearOf(p.created_at)))].sort((a, b) => b - a);
+  if (!years.includes(new Date().getFullYear())) years.unshift(new Date().getFullYear());
+  const posts = allPosts.filter((p) => yearFilter === 'all' || yearOf(p.created_at) === Number(yearFilter));
+
   const deptOptions = departments.map((d) => `<option value="${d.dept_id}" ${d.dept_id === selectedDeptId ? 'selected' : ''}>${esc(d.dept_name)}</option>`).join('');
+  const yearOptions = ['<option value="all">전체 연도</option>', ...years.map((y) => `<option value="${y}" ${String(y) === yearFilter ? 'selected' : ''}>${y}년</option>`)].join('');
 
   const rows = posts
     .map(
@@ -56,6 +71,7 @@ async function renderList(container, departments) {
     <div class="toolbar">
       <label style="margin-right:4px">부서</label>
       <select id="deptSel">${deptOptions}</select>
+      <select id="yearSel" style="margin-left:8px">${yearOptions}</select>
       <button class="btn" id="newPostBtn" style="margin-left:auto">새 글 작성</button>
     </div>
     <div style="overflow-x:auto"><table>
@@ -68,6 +84,7 @@ async function renderList(container, departments) {
     selectedDeptId = Number(ev.target.value);
     renderDeptPosts(container);
   };
+  document.getElementById('yearSel').onchange = (ev) => { yearFilter = ev.target.value; renderDeptPosts(container); };
   container.querySelectorAll('[data-open]').forEach((a) => {
     a.onclick = (ev) => { ev.preventDefault(); currentPostId = Number(a.dataset.open); mode = 'view'; renderDeptPosts(container); };
   });
@@ -93,7 +110,7 @@ async function renderForm(container, departments) {
     <h2>${post ? '게시글 수정' : '새 글 작성'}</h2>
     <form class="entry" id="postForm">
       <div style="grid-column:span 4"><label>부서 *</label><select id="f_dept">${deptOptions}</select></div>
-      <div style="grid-column:span 6"><label>제목 *</label><input id="f_title" required value="${esc(post?.title ?? '')}"></div>
+      <div style="grid-column:span 6"><label>제목 *</label><input id="f_title" type="text" required value="${esc(post?.title ?? '')}"></div>
       <div style="grid-column:span 2"><label>&nbsp;</label><label style="display:flex;align-items:center;height:36px;gap:6px"><input type="checkbox" id="f_pinned" ${post?.pinned ? 'checked' : ''}> 상단 고정</label></div>
       <div style="grid-column:span 12"><label>내용</label><textarea id="f_body" rows="10" style="width:100%;padding:10px 12px;border:1px solid transparent;background:var(--bg);border-radius:var(--radius-sm);font-family:inherit;font-size:13px;resize:vertical">${esc(post?.body ?? '')}</textarea></div>
       <div style="grid-column:span 12" class="toolbar">
@@ -162,14 +179,13 @@ async function renderDetail(container, departments) {
   </div>
   <div class="card" id="attWrap"></div>`;
 
-  document.getElementById('backBtn').onclick = () => { mode = 'list'; currentPostId = null; renderDeptPosts(container); };
+  document.getElementById('backBtn').onclick = () => { resetView(); renderDeptPosts(container); };
   document.getElementById('editBtn').onclick = () => { mode = 'edit'; renderDeptPosts(container); };
   document.getElementById('delBtn').onclick = async () => {
     if (!confirm('게시글을 삭제할까요?')) return;
     const { error: delErr } = await supabase.from('dept_posts').delete().eq('post_id', post.post_id);
     if (delErr) { alert('삭제 실패: ' + delErr.message); return; }
-    mode = 'list';
-    currentPostId = null;
+    resetView();
     renderDeptPosts(container);
   };
 

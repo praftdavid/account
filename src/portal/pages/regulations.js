@@ -2,13 +2,24 @@ import { supabase } from '../../lib/supabaseClient.js';
 import { esc } from '../../lib/util.js';
 import { renderAttachmentsWidget } from '../../lib/attachments.js';
 
-const CATEGORIES = ['정관', '규정', '지침', '서식', '기타'];
+const CATEGORIES = ['정관', '규정', '지침', '기타'];
 const STATUS_LABEL = { active: '시행중', abolished: '폐지' };
 const STATUS_BADGE = { active: 'ok', abolished: 'bad' };
 
 let mode = 'list'; // 'list' | 'new' | 'edit' | 'view'
 let currentRegId = null;
 let categoryFilter = 'all';
+let yearFilter = 'all';
+
+export function resetView() {
+  mode = 'list';
+  currentRegId = null;
+}
+
+function yearOf(reg) {
+  const d = reg.effective_date ?? reg.created_at;
+  return d ? Number(String(d).slice(0, 4)) : null;
+}
 
 export async function renderRegulations(container) {
   if (mode === 'list') return renderList(container);
@@ -17,17 +28,24 @@ export async function renderRegulations(container) {
 }
 
 async function renderList(container) {
-  let q = supabase.from('regulations').select('*').order('category').order('title');
-  if (categoryFilter !== 'all') q = q.eq('category', categoryFilter);
-  const { data: regs, error } = await q;
+  const { data: allRegs, error } = await supabase.from('regulations').select('*').order('category').order('title');
   if (error) {
     container.innerHTML = `<div class="card"><p class="err">규정 조회 실패: ${esc(error.message)}</p></div>`;
     return;
   }
 
+  const years = [...new Set(allRegs.map(yearOf).filter(Boolean))].sort((a, b) => b - a);
+  if (!years.includes(new Date().getFullYear())) years.unshift(new Date().getFullYear());
+
+  const regs = allRegs.filter(
+    (r) => (categoryFilter === 'all' || r.category === categoryFilter) && (yearFilter === 'all' || yearOf(r) === Number(yearFilter))
+  );
+
   const tabs = [['all', '전체'], ...CATEGORIES.map((c) => [c, c])]
     .map(([k, label]) => `<button class="btn sm ${k === categoryFilter ? '' : 'ghost'}" data-filter="${k}">${label}</button>`)
     .join('');
+
+  const yearOptions = ['<option value="all">전체 연도</option>', ...years.map((y) => `<option value="${y}" ${String(y) === yearFilter ? 'selected' : ''}>${y}년</option>`)].join('');
 
   const rows = regs
     .map(
@@ -46,6 +64,7 @@ async function renderList(container) {
   <div class="card">
     <div class="toolbar">
       ${tabs}
+      <select id="yearSel" style="margin-left:8px">${yearOptions}</select>
       <button class="btn" id="newRegBtn" style="margin-left:auto">규정 등록</button>
     </div>
     <div style="overflow-x:auto"><table>
@@ -57,6 +76,7 @@ async function renderList(container) {
   container.querySelectorAll('[data-filter]').forEach((b) => {
     b.onclick = () => { categoryFilter = b.dataset.filter; renderList(container); };
   });
+  document.getElementById('yearSel').onchange = (ev) => { yearFilter = ev.target.value; renderList(container); };
   container.querySelectorAll('[data-open]').forEach((a) => {
     a.onclick = (ev) => { ev.preventDefault(); currentRegId = Number(a.dataset.open); mode = 'view'; renderRegulations(container); };
   });
@@ -81,9 +101,9 @@ async function renderForm(container) {
     <h2>${reg ? '규정 수정' : '규정 등록'}</h2>
     <form class="entry" id="regForm">
       <div style="grid-column:span 3"><label>구분 *</label><select id="f_cat">${catOptions}</select></div>
-      <div style="grid-column:span 6"><label>제목 *</label><input id="f_title" required value="${esc(reg?.title ?? '')}"></div>
-      <div style="grid-column:span 3"><label>규정번호</label><input id="f_no" value="${esc(reg?.reg_no ?? '')}"></div>
-      <div style="grid-column:span 3"><label>버전 *</label><input id="f_ver" required value="${esc(reg?.version ?? '1.0')}"></div>
+      <div style="grid-column:span 6"><label>제목 *</label><input id="f_title" type="text" required value="${esc(reg?.title ?? '')}"></div>
+      <div style="grid-column:span 3"><label>규정번호</label><input id="f_no" type="text" value="${esc(reg?.reg_no ?? '')}"></div>
+      <div style="grid-column:span 3"><label>버전 *</label><input id="f_ver" type="text" required value="${esc(reg?.version ?? '1.0')}"></div>
       <div style="grid-column:span 3"><label>시행일</label><input type="date" id="f_eff" value="${reg?.effective_date ?? ''}"></div>
       <div style="grid-column:span 12"><label>본문</label><textarea id="f_body" rows="12" style="width:100%;padding:10px 12px;border:1px solid transparent;background:var(--bg);border-radius:var(--radius-sm);font-family:inherit;font-size:13px;resize:vertical">${esc(reg?.body ?? '')}</textarea></div>
       <div style="grid-column:span 12" class="toolbar">
@@ -155,7 +175,7 @@ async function renderDetail(container) {
   </div>
   <div class="card" id="attWrap"></div>`;
 
-  document.getElementById('backBtn').onclick = () => { mode = 'list'; currentRegId = null; renderRegulations(container); };
+  document.getElementById('backBtn').onclick = () => { resetView(); renderRegulations(container); };
   document.getElementById('editBtn').onclick = () => { mode = 'edit'; renderRegulations(container); };
   document.getElementById('toggleBtn').onclick = async () => {
     const newStatus = reg.status === 'active' ? 'abolished' : 'active';

@@ -1,11 +1,16 @@
 import { supabase } from '../lib/supabaseClient.js';
 import { renderLogin } from '../pages/login.js';
 import { renderDashboard } from './pages/dashboard.js';
-import { renderDocuments } from './pages/documents.js';
-import { renderRegulations } from './pages/regulations.js';
-import { renderDeptPosts } from './pages/deptPosts.js';
+import { renderDocuments, resetView as resetDocuments } from './pages/documents.js';
+import { renderRegulations, resetView as resetRegulations } from './pages/regulations.js';
+import { renderDeptPosts, resetView as resetDeptPosts } from './pages/deptPosts.js';
 import { renderDepartments } from './pages/departments.js';
 import { esc } from '../lib/util.js';
+
+// 새 글 작성/수정 화면을 보다가 다른 탭으로 갔다 와도 항상 목록부터 보이도록, 실제 네비게이션
+// (nav 클릭)으로 들어올 때만 해당 화면을 목록 모드로 되돌린다 — 저장 후 상세로 넘어가는 등
+// 페이지 내부 전환은 이 리셋을 거치지 않고 각자 알아서 처리한다.
+const VIEW_RESET = { docs: resetDocuments, regs: resetRegulations, posts: resetDeptPosts };
 
 // 메뉴 배치 원칙 — 실제로 자주 쓰는 순서대로: 대시보드 → 전자결재(가장 빈번한 일상 업무) →
 // 제규정(가끔 참조) → 부서자료(가끔 참조) → 기초정보(거의 안 건드리는 마스터데이터, 맨 뒤).
@@ -30,6 +35,7 @@ function groupOf(view) {
 }
 
 function go(view) {
+  VIEW_RESET[view]?.();
   cur = view;
   render();
 }

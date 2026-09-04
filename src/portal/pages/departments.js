@@ -33,8 +33,8 @@ export async function renderDepartments(container) {
   <div class="card">
     <h2>${editing ? `부서 수정 — ${esc(editing.dept_name)}` : '부서 추가'}</h2>
     <form class="entry" id="deptForm">
-      <div style="grid-column:span 5"><label>부서명 *</label><input id="f_name" required value="${esc(editing?.dept_name ?? '')}"></div>
-      <div style="grid-column:span 4"><label>코드</label><input id="f_code" value="${esc(editing?.dept_code ?? '')}"></div>
+      <div style="grid-column:span 5"><label>부서명 *</label><input id="f_name" type="text" required value="${esc(editing?.dept_name ?? '')}"></div>
+      <div style="grid-column:span 4"><label>코드</label><input id="f_code" type="text" value="${esc(editing?.dept_code ?? '')}"></div>
       <div style="grid-column:span 3"><label>정렬순서</label><input type="number" id="f_sort" value="${editing?.sort_order ?? 0}"></div>
       <div style="grid-column:span 12" class="toolbar">
         <button class="btn" type="submit">${editing ? '수정 저장' : '추가'}</button>
