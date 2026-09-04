@@ -3,12 +3,15 @@ import { esc, todayStr } from '../../lib/util.js';
 import { renderAttachmentsWidget } from '../../lib/attachments.js';
 import { fetchDepartments } from '../lib/departments.js';
 import { renderGanttChart } from '../lib/gantt.js';
+import { PROJECT_CATEGORIES } from '../lib/projectCategories.js';
 
 const TASK_STATUSES = ['시작전', '진행중', '완료'];
 
 let mode = 'list'; // 'list' | 'new' | 'view'
 let currentProjectId = null;
 let selectedDeptId = null;
+let categoryFilter = 'all';
+let yearFilter = 'all';
 
 export function resetView() {
   mode = 'list';
@@ -40,8 +43,12 @@ export async function renderProjects(container) {
   return renderProjectDetailView(container, currentProjectId, { readOnly: false, onBack: resetView });
 }
 
+function yearOf(dateStr) {
+  return dateStr ? Number(String(dateStr).slice(0, 4)) : null;
+}
+
 async function renderList(container, departments) {
-  const { data: projects, error } = await supabase
+  const { data: allProjects, error } = await supabase
     .from('projects')
     .select('*, project_tasks(status)')
     .eq('dept_id', selectedDeptId)
@@ -52,13 +59,24 @@ async function renderList(container, departments) {
     return;
   }
 
+  // 연도 필터와 업무종류 필터는 서로 독립 — 업무종류만 고르고 연도를 "전체"로 두면
+  // 그 부서의 전체 기간 해당 업무종류 프로젝트를 다 볼 수 있다.
+  const years = [...new Set(allProjects.map((p) => yearOf(p.created_at)))].sort((a, b) => b - a);
+  if (!years.includes(new Date().getFullYear())) years.unshift(new Date().getFullYear());
+  const projects = allProjects.filter(
+    (p) => (categoryFilter === 'all' || p.category === categoryFilter) && (yearFilter === 'all' || yearOf(p.created_at) === Number(yearFilter))
+  );
+
   const deptOptions = departments.map((d) => `<option value="${d.dept_id}" ${d.dept_id === selectedDeptId ? 'selected' : ''}>${esc(d.dept_name)}</option>`).join('');
+  const categoryOptions = ['<option value="all">전체 업무종류</option>', ...PROJECT_CATEGORIES.map((c) => `<option value="${c}" ${categoryFilter === c ? 'selected' : ''}>${c}</option>`)].join('');
+  const yearOptions = ['<option value="all">전체 연도</option>', ...years.map((y) => `<option value="${y}" ${String(y) === yearFilter ? 'selected' : ''}>${y}년</option>`)].join('');
 
   const rows = projects
     .map((p) => {
       const tasks = p.project_tasks ?? [];
       const pct = progressOf(tasks);
       return `<tr>
+        <td class="c">${esc(p.category)}</td>
         <td><a href="#" data-open="${p.project_id}">${esc(p.title)}</a></td>
         <td class="c">${tasks.length}건</td>
         <td>
@@ -77,15 +95,19 @@ async function renderList(container, departments) {
     <div class="toolbar">
       <label style="margin-right:4px">부서</label>
       <select id="deptSel">${deptOptions}</select>
+      <select id="catSel" style="margin-left:8px">${categoryOptions}</select>
+      <select id="yearSel" style="margin-left:8px">${yearOptions}</select>
       <button class="btn" id="newProjBtn" style="margin-left:auto">새 프로젝트</button>
     </div>
     <div style="overflow-x:auto"><table>
-      <tr><th>프로젝트명</th><th>업무 수</th><th>진행률</th><th>종료 예정</th></tr>
-      ${rows || '<tr><td colspan="4" class="note" style="text-align:center">진행 중인 프로젝트가 없습니다.</td></tr>'}
+      <tr><th>업무종류</th><th>프로젝트명</th><th>업무 수</th><th>진행률</th><th>종료 예정</th></tr>
+      ${rows || '<tr><td colspan="5" class="note" style="text-align:center">해당하는 진행 중인 프로젝트가 없습니다.</td></tr>'}
     </table></div>
   </div>`;
 
   document.getElementById('deptSel').onchange = (ev) => { selectedDeptId = Number(ev.target.value); renderProjects(container); };
+  document.getElementById('catSel').onchange = (ev) => { categoryFilter = ev.target.value; renderProjects(container); };
+  document.getElementById('yearSel').onchange = (ev) => { yearFilter = ev.target.value; renderProjects(container); };
   document.getElementById('newProjBtn').onclick = () => { mode = 'new'; renderProjects(container); };
   container.querySelectorAll('[data-open]').forEach((a) => {
     a.onclick = (ev) => { ev.preventDefault(); currentProjectId = Number(a.dataset.open); mode = 'view'; renderProjects(container); };
@@ -94,14 +116,16 @@ async function renderList(container, departments) {
 
 async function renderForm(container, departments) {
   const deptOptions = departments.map((d) => `<option value="${d.dept_id}" ${d.dept_id === selectedDeptId ? 'selected' : ''}>${esc(d.dept_name)}</option>`).join('');
+  const categoryOptions = PROJECT_CATEGORIES.map((c) => `<option value="${c}">${c}</option>`).join('');
 
   container.innerHTML = `
   <div class="card">
     <h2>새 프로젝트</h2>
     <form class="entry" id="projForm">
       <div style="grid-column:span 4"><label>부서 *</label><select id="f_dept">${deptOptions}</select></div>
-      <div style="grid-column:span 4"><label>시작일</label><input id="f_start" type="date" value="${todayStr()}"></div>
-      <div style="grid-column:span 4"><label>종료 예정일</label><input id="f_end" type="date"></div>
+      <div style="grid-column:span 4"><label>업무종류 *</label><select id="f_cat">${categoryOptions}</select></div>
+      <div style="grid-column:span 2"><label>시작일</label><input id="f_start" type="date" value="${todayStr()}"></div>
+      <div style="grid-column:span 2"><label>종료 예정일</label><input id="f_end" type="date"></div>
       <div style="grid-column:span 12"><label>프로젝트명 *</label><input id="f_title" type="text" required></div>
       <div style="grid-column:span 12"><label>개요/목적</label><textarea id="f_desc" rows="4" style="width:100%;padding:10px 12px;border:1px solid transparent;background:var(--bg);border-radius:var(--radius-sm);font-family:inherit;font-size:13px;resize:vertical"></textarea></div>
       <div style="grid-column:span 12" class="toolbar">
@@ -123,6 +147,7 @@ async function renderForm(container, departments) {
       .from('projects')
       .insert({
         dept_id: Number(document.getElementById('f_dept').value),
+        category: document.getElementById('f_cat').value,
         title: document.getElementById('f_title').value.trim(),
         description: document.getElementById('f_desc').value.trim() || null,
         start_date: document.getElementById('f_start').value || null,
@@ -182,6 +207,7 @@ export async function renderProjectDetailView(container, projectId, { readOnly, 
     <div class="toolbar">
       <h2 style="margin-bottom:0">${esc(project.title)}</h2>
       <span class="badge ${project.status === 'archived' ? 'bad' : 'ok'}">${project.status === 'archived' ? '완료(아카이브)' : '진행중'}</span>
+      <span class="badge draft">${esc(project.category)}</span>
       <span class="note" style="margin-left:8px">${esc(deptName)} · 진행률 ${pct}%</span>
       <span style="margin-left:auto">
         ${!readOnly && project.status === 'active' ? '<button class="btn" id="archiveBtn">완료 처리(아카이브)</button>' : ''}

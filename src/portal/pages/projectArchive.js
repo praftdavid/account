@@ -2,12 +2,14 @@ import { supabase } from '../../lib/supabaseClient.js';
 import { esc } from '../../lib/util.js';
 import { fetchDepartments } from '../lib/departments.js';
 import { renderProjectDetailView } from './projects.js';
+import { PROJECT_CATEGORIES } from '../lib/projectCategories.js';
 
 // "부서자료" 탭 — 완료(아카이브) 처리된 프로젝트만 부서별로 모아 읽기전용으로 보여준다.
 // 진행중 프로젝트 편집은 전부 [프로젝트] 탭 쪽(projects.js)에서 하고, 여기는 조회 전용.
 let mode = 'list'; // 'list' | 'view'
 let currentProjectId = null;
 let selectedDeptId = null;
+let categoryFilter = 'all';
 let yearFilter = 'all';
 
 export function resetView() {
@@ -45,15 +47,21 @@ async function renderList(container, departments) {
     return;
   }
 
+  // 연도 필터와 업무종류 필터는 서로 독립 — 업무종류만 고르고 연도를 "전체"로 두면
+  // 그 부서의 전체 기간 해당 업무종류 완료 프로젝트를 다 볼 수 있다(예: 사업계획 전체 이력).
   const years = [...new Set(allProjects.map((p) => yearOf(p.archived_at)))].sort((a, b) => b - a);
-  const projects = allProjects.filter((p) => yearFilter === 'all' || yearOf(p.archived_at) === Number(yearFilter));
+  const projects = allProjects.filter(
+    (p) => (categoryFilter === 'all' || p.category === categoryFilter) && (yearFilter === 'all' || yearOf(p.archived_at) === Number(yearFilter))
+  );
 
   const deptOptions = departments.map((d) => `<option value="${d.dept_id}" ${d.dept_id === selectedDeptId ? 'selected' : ''}>${esc(d.dept_name)}</option>`).join('');
+  const categoryOptions = ['<option value="all">전체 업무종류</option>', ...PROJECT_CATEGORIES.map((c) => `<option value="${c}" ${categoryFilter === c ? 'selected' : ''}>${c}</option>`)].join('');
   const yearOptions = ['<option value="all">전체 연도</option>', ...years.map((y) => `<option value="${y}" ${String(y) === yearFilter ? 'selected' : ''}>${y}년</option>`)].join('');
 
   const rows = projects
     .map(
       (p) => `<tr>
+        <td class="c">${esc(p.category)}</td>
         <td><a href="#" data-open="${p.project_id}">${esc(p.title)}</a></td>
         <td class="c">${p.start_date ?? ''} ~ ${p.end_date ?? ''}</td>
         <td class="c">${p.archived_at ? String(p.archived_at).slice(0, 10) : ''}</td>
@@ -63,19 +71,21 @@ async function renderList(container, departments) {
 
   container.innerHTML = `
   <div class="card">
-    <p class="note" style="margin-bottom:10px">완료(아카이브) 처리된 프로젝트 보관함입니다. 진행 중인 프로젝트는 [전자결재] 옆 [프로젝트] 탭에서 관리하세요.</p>
+    <p class="note" style="margin-bottom:10px">완료(아카이브) 처리된 프로젝트 보관함입니다. 진행 중인 프로젝트는 [전자결재] 옆 [프로젝트] 탭에서 관리하세요. 업무종류만 고르고 연도를 "전체 연도"로 두면 그 종류의 전체 기간 자료를 모아볼 수 있습니다.</p>
     <div class="toolbar">
       <label style="margin-right:4px">부서</label>
       <select id="deptSel">${deptOptions}</select>
+      <select id="catSel" style="margin-left:8px">${categoryOptions}</select>
       <select id="yearSel" style="margin-left:8px">${yearOptions}</select>
     </div>
     <div style="overflow-x:auto"><table>
-      <tr><th>프로젝트명</th><th>기간</th><th>완료일</th></tr>
-      ${rows || '<tr><td colspan="3" class="note" style="text-align:center">완료된 프로젝트가 없습니다.</td></tr>'}
+      <tr><th>업무종류</th><th>프로젝트명</th><th>기간</th><th>완료일</th></tr>
+      ${rows || '<tr><td colspan="4" class="note" style="text-align:center">해당하는 완료된 프로젝트가 없습니다.</td></tr>'}
     </table></div>
   </div>`;
 
   document.getElementById('deptSel').onchange = (ev) => { selectedDeptId = Number(ev.target.value); renderProjectArchive(container); };
+  document.getElementById('catSel').onchange = (ev) => { categoryFilter = ev.target.value; renderProjectArchive(container); };
   document.getElementById('yearSel').onchange = (ev) => { yearFilter = ev.target.value; renderProjectArchive(container); };
   container.querySelectorAll('[data-open]').forEach((a) => {
     a.onclick = (ev) => { ev.preventDefault(); currentProjectId = Number(a.dataset.open); mode = 'view'; renderProjectArchive(container); };
