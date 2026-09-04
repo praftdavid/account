@@ -3,6 +3,33 @@ import { esc } from './util.js';
 
 const BUCKET = 'portal-files';
 
+// 사진(카메라로 찍은 증빙 등)은 용량이 커서 업로드 전에 줄인다. PDF·워드·HWPX는 이미 압축된
+// 포맷이라 재압축해도 실익이 거의 없고, 오히려 열람 방식이 꼬일 수 있어 손대지 않는다.
+const COMPRESSIBLE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const MAX_DIMENSION = 1920;
+const JPEG_QUALITY = 0.82;
+const COMPRESS_THRESHOLD_BYTES = 300 * 1024;
+
+async function compressImageIfNeeded(file) {
+  if (!COMPRESSIBLE_TYPES.has(file.type) || file.size < COMPRESS_THRESHOLD_BYTES) return file;
+  try {
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, MAX_DIMENSION / Math.max(bitmap.width, bitmap.height));
+    const w = Math.round(bitmap.width * scale);
+    const h = Math.round(bitmap.height * scale);
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    canvas.getContext('2d').drawImage(bitmap, 0, 0, w, h);
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', JPEG_QUALITY));
+    if (!blob || blob.size >= file.size) return file; // 압축이 오히려 커지면 원본 유지
+    const newName = file.name.replace(/\.[^.]+$/, '') + '.jpg';
+    return new File([blob], newName, { type: 'image/jpeg' });
+  } catch {
+    return file; // 압축 실패 시 원본 그대로 업로드(안전 우선)
+  }
+}
+
 export async function listAttachments(targetType, targetId) {
   const { data, error } = await supabase
     .from('attachments')
@@ -14,7 +41,8 @@ export async function listAttachments(targetType, targetId) {
   return data;
 }
 
-export async function uploadAttachment(targetType, targetId, file, uploaderEmail) {
+export async function uploadAttachment(targetType, targetId, rawFile, uploaderEmail) {
+  const file = await compressImageIfNeeded(rawFile);
   const path = `${targetType}/${targetId}/${Date.now()}_${file.name}`;
   const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, file);
   if (upErr) throw upErr;
@@ -84,7 +112,8 @@ export async function renderAttachmentsWidget(container, targetType, targetId, u
       <input type="file" id="attFile">
       <button class="btn sm" id="attUploadBtn">업로드</button>
       <span class="err" id="attErr"></span>
-    </div>`;
+    </div>
+    <p class="note">PDF·HWPX·Word 등 파일 형식 제한 없이 첨부할 수 있습니다. 사진(JPG/PNG)은 업로드 시 자동으로 용량을 줄입니다.</p>`;
 
   const byId = (id) => list.find((a) => a.attachment_id === Number(id));
   const refresh = () => renderAttachmentsWidget(container, targetType, targetId, userEmail);
@@ -112,13 +141,18 @@ export async function renderAttachmentsWidget(container, targetType, targetId, u
   document.getElementById('attUploadBtn').onclick = async () => {
     const input = document.getElementById('attFile');
     const errEl = document.getElementById('attErr');
+    const btn = document.getElementById('attUploadBtn');
     errEl.textContent = '';
     if (!input.files[0]) return;
+    btn.disabled = true;
+    btn.textContent = '업로드 중…';
     try {
       await uploadAttachment(targetType, targetId, input.files[0], userEmail);
       refresh();
     } catch (err) {
       errEl.textContent = '업로드 실패: ' + err.message;
+      btn.disabled = false;
+      btn.textContent = '업로드';
     }
   };
 }

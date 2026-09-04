@@ -11,6 +11,8 @@ export const COMPANY = {
 };
 
 export const DOC_TYPES = ['기안문', '시행문', '지급회의서'];
+export const EVIDENCE_TYPES = ['세금계산서', '계산서', '신용카드매출전표', '현금영수증', '기타'];
+export const TAX_TREATMENTS = ['손금산입', '접대비', '기타'];
 
 export function docNoLabel(doc) {
   return doc.doc_no ?? '(미상신)';

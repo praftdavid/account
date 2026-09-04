@@ -1,6 +1,7 @@
 import { supabase } from '../../lib/supabaseClient.js';
 import { esc } from '../../lib/util.js';
 import { renderAttachmentsWidget } from '../../lib/attachments.js';
+import { retentionDeadline } from '../lib/retention.js';
 
 const CATEGORIES = ['정관', '규정', '지침', '기타'];
 const STATUS_LABEL = { active: '시행중', abolished: '폐지' };
@@ -170,6 +171,7 @@ async function renderDetail(container) {
     <table>
       <tr><th style="width:110px">구분</th><td>${esc(reg.category)}</td><th style="width:110px">규정번호</th><td>${esc(reg.reg_no ?? '')}</td></tr>
       <tr><th>버전</th><td>${esc(reg.version)}</td><th>시행일</th><td>${reg.effective_date ?? ''}</td></tr>
+      <tr><th>보존기한</th><td colspan="3">${esc(retentionDeadline(reg.created_at))}</td></tr>
     </table>
     <div style="white-space:pre-wrap;margin-top:16px;line-height:1.8">${esc(reg.body ?? '')}</div>
   </div>

@@ -1,5 +1,6 @@
 import { esc } from '../../lib/util.js';
 import { COMPANY, docNoLabel } from './letterhead.js';
+import { openPrintWindow } from './printWindow.js';
 
 // 문서 상세 화면(인라인)과 인쇄 팝업이 이 함수 하나를 공유한다 — 둘 다 "PDF 뷰어처럼 바로
 // 읽히는" 같은 서식을 보여줘야 하기 때문에, 마크업을 두 곳에서 따로 만들지 않는다.
@@ -39,20 +40,5 @@ ${issuerLine}
 }
 
 export function openLetterheadPrint(doc, deptName) {
-  const win = window.open('', '_blank');
-  if (!win) {
-    alert('팝업이 차단되었습니다. 브라우저의 팝업 차단을 해제해주세요.');
-    return;
-  }
-  win.document.write(`<!DOCTYPE html>
-<html lang="ko"><head><meta charset="UTF-8">
-<title>${esc(doc.title)}</title>
-<style>
-  body{font-family:'Batang','바탕','Malgun Gothic',serif;margin:0;padding:40px 50px;color:#000}
-  .sheet{max-width:800px;margin:0 auto}
-  @media print{body{padding:20px 30px}}
-</style>
-</head><body><div class="sheet">${renderLetterheadBody(doc, deptName)}</div></body></html>`);
-  win.document.close();
-  win.onload = () => win.print();
+  openPrintWindow(doc.title, renderLetterheadBody(doc, deptName));
 }
