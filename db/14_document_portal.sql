@@ -142,11 +142,6 @@ CREATE POLICY portal_files_authenticated_full_access ON storage.objects
     USING (bucket_id = 'portal-files')
     WITH CHECK (bucket_id = 'portal-files');
 
--- =====================================================================
--- 기초 데이터 — 부서가 하나도 없으면 문서포털 각 화면의 부서 선택란이 비어
--- 아무것도 못 만드는 상태로 시작하므로, 1인 법인 현재 구조에 맞는 기본 부서 하나를 넣어둔다.
--- 조직이 커지면 [기초정보 > 부서관리] 화면에서 추가하면 된다.
--- =====================================================================
-INSERT INTO departments (dept_name, dept_code, sort_order)
-VALUES ('대표이사실', 'CEO', 0)
-ON CONFLICT (dept_name) DO NOTHING;
+-- 기초 부서 데이터는 16_departments_reseed.sql에서 넣는다(여기서 넣었다가 16번이 이름을
+-- 바꾸는 방식은, 이 파일을 재실행할 때마다 16번이 이미 바꿔놓은 이름과 충돌해 재실행이
+-- 안전하지 않게 되므로 — 부서 시딩 책임을 한 파일에만 두기로 함).
