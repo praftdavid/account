@@ -133,6 +133,7 @@ export async function exportExpenseResolutionToDocx(doc, deptName, accountLabel)
     infoRow('기안부서', deptName),
     infoRow('기안자', doc.drafter_email),
     infoRow('계정과목', accountLabel || '(미지정)'),
+    infoRow('지출일자', doc.expense_date ?? ''),
     infoRow('지출금액', `${fmt(doc.expense_amount)}원`),
     infoRow('지출처', doc.payee ?? ''),
     infoRow('증빙유형', doc.evidence_type ?? ''),

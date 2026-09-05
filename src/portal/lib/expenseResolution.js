@@ -22,14 +22,18 @@ export function renderExpenseResolutionBody(doc, deptName, accountLabel) {
   <tr>
     <th style="text-align:left;background:#f2f4f6;padding:8px 10px;border:1px solid #ccc">계정과목</th>
     <td style="padding:8px 10px;border:1px solid #ccc">${esc(accountLabel || '(미지정)')}</td>
+    <th style="text-align:left;background:#f2f4f6;padding:8px 10px;border:1px solid #ccc">지출일자</th>
+    <td style="padding:8px 10px;border:1px solid #ccc">${esc(doc.expense_date ?? '')}</td>
+  </tr>
+  <tr>
     <th style="text-align:left;background:#f2f4f6;padding:8px 10px;border:1px solid #ccc">지출금액</th>
     <td style="padding:8px 10px;border:1px solid #ccc;font-weight:bold">${fmt(doc.expense_amount)}원</td>
+    <th style="text-align:left;background:#f2f4f6;padding:8px 10px;border:1px solid #ccc">증빙유형</th>
+    <td style="padding:8px 10px;border:1px solid #ccc">${esc(doc.evidence_type ?? '')}</td>
   </tr>
   <tr>
     <th style="text-align:left;background:#f2f4f6;padding:8px 10px;border:1px solid #ccc">지출처</th>
-    <td style="padding:8px 10px;border:1px solid #ccc">${esc(doc.payee ?? '')}</td>
-    <th style="text-align:left;background:#f2f4f6;padding:8px 10px;border:1px solid #ccc">증빙유형</th>
-    <td style="padding:8px 10px;border:1px solid #ccc">${esc(doc.evidence_type ?? '')}</td>
+    <td style="padding:8px 10px;border:1px solid #ccc" colspan="3">${esc(doc.payee ?? '')}</td>
   </tr>
   <tr>
     <th style="text-align:left;background:#f2f4f6;padding:8px 10px;border:1px solid #ccc">세무처리</th>

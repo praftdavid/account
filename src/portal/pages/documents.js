@@ -1,5 +1,5 @@
 import { supabase } from '../../lib/supabaseClient.js';
-import { esc } from '../../lib/util.js';
+import { esc, todayStr } from '../../lib/util.js';
 import { renderAttachmentsWidget } from '../../lib/attachments.js';
 import { fetchDepartments } from '../lib/departments.js';
 import { DOC_TYPES, EVIDENCE_TYPES, TAX_TREATMENTS, requiresIssuer } from '../lib/letterhead.js';
@@ -131,12 +131,13 @@ function expenseFieldsBlock(doc, accounts) {
   const evidenceOptions = ['<option value="">(선택)</option>', ...EVIDENCE_TYPES.map((t) => `<option value="${t}" ${doc?.evidence_type === t ? 'selected' : ''}>${t}</option>`)].join('');
   const taxOptions = ['<option value="">(선택)</option>', ...TAX_TREATMENTS.map((t) => `<option value="${t}" ${doc?.tax_treatment === t ? 'selected' : ''}>${t}</option>`)].join('');
 
-  return `<div class="grid" id="expenseWrap" style="grid-template-columns:repeat(4,1fr);grid-column:span 12;margin:0 0 4px">
+  return `<div class="grid" id="expenseWrap" style="grid-template-columns:repeat(5,1fr);grid-column:span 12;margin:0 0 4px">
     <div><label>계정과목 *</label><select id="f_account">${accountOptions}</select></div>
+    <div><label>지출일자 *</label><input id="f_expdate" type="date" value="${doc?.expense_date ?? todayStr()}"></div>
     <div><label>지출금액 *</label><input id="f_amount" type="number" min="0" step="1" value="${doc?.expense_amount ?? ''}"></div>
     <div><label>지출처</label><input id="f_payee" type="text" value="${esc(doc?.payee ?? '')}"></div>
     <div><label>증빙유형</label><select id="f_evidence">${evidenceOptions}</select></div>
-    <div style="grid-column:span 4"><label>세무처리</label><select id="f_tax">${taxOptions}</select></div>
+    <div style="grid-column:span 5"><label>세무처리</label><select id="f_tax">${taxOptions}</select></div>
   </div>
   <p class="note" style="grid-column:span 12">계정과목은 회계 시스템의 계정과목 목록을 그대로 씁니다. 증빙서류(세금계산서 등)는 저장 후 상세화면에서 첨부파일로 올려주세요.</p>`;
 }
@@ -192,6 +193,7 @@ async function renderForm(container) {
     expenseWrap.style.display = isExpense ? 'grid' : 'none';
     document.getElementById('f_account').required = isExpense;
     document.getElementById('f_amount').required = isExpense;
+    document.getElementById('f_expdate').required = isExpense;
     const need = requiresIssuer(typeSel.value);
     document.getElementById('f_issuer').required = need;
     document.getElementById('issuerReq').textContent = need ? '(시행문은 필수)' : '(선택)';
@@ -219,8 +221,9 @@ async function renderForm(container) {
     }
     const accountId = Number(document.getElementById('f_account').value) || null;
     const amount = document.getElementById('f_amount').value;
-    if (isExpense && (!accountId || amount === '')) {
-      errEl.textContent = '지급회의서는 계정과목과 지출금액을 입력해야 합니다.';
+    const expenseDate = document.getElementById('f_expdate').value || null;
+    if (isExpense && (!accountId || amount === '' || !expenseDate)) {
+      errEl.textContent = '지급회의서는 계정과목·지출일자·지출금액을 입력해야 합니다.';
       return;
     }
 
@@ -234,6 +237,7 @@ async function renderForm(container) {
       recipient: isExpense ? null : document.getElementById('f_recipient').value.trim() || null,
       issuer_name: isExpense ? null : issuerName,
       account_id: isExpense ? accountId : null,
+      expense_date: isExpense ? expenseDate : null,
       expense_amount: isExpense && amount !== '' ? Number(amount) : null,
       payee: isExpense ? document.getElementById('f_payee').value.trim() || null : null,
       evidence_type: isExpense ? document.getElementById('f_evidence').value || null : null,
