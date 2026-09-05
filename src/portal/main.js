@@ -17,9 +17,9 @@ const VIEW_RESET = { docs: resetDocuments, regs: resetRegulations, projects: res
 // 제규정 → 부서자료(완료 프로젝트 아카이브, 조회 위주) → 기초정보(마스터데이터, 맨 뒤).
 const GROUPS = [
   ['home', '대시보드', [['dashboard', '대시보드', renderDashboard]]],
+  ['reg', '제규정', [['regs', '규정목록', renderRegulations]]],
   ['approval', '전자결재', [['docs', '문서함', renderDocuments]]],
   ['project', '프로젝트', [['projects', '진행 현황', renderProjects]]],
-  ['reg', '제규정', [['regs', '규정목록', renderRegulations]]],
   ['dept', '부서자료', [['archive', '완료 프로젝트', renderProjectArchive]]],
   ['base', '기초정보', [['depts', '부서관리', renderDepartments]]],
 ];
@@ -27,6 +27,8 @@ const GROUPS = [
 const navEl = document.getElementById('nav');
 const mainEl = document.getElementById('main');
 const userbarEl = document.getElementById('userbar');
+const homeLinkEl = document.getElementById('homeLink');
+if (homeLinkEl) homeLinkEl.onclick = () => go('dashboard');
 
 let session = null;
 let cur = 'dashboard';

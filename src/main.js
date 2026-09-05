@@ -113,6 +113,8 @@ const GROUPS = [
 const navEl = document.getElementById('nav');
 const mainEl = document.getElementById('main');
 const userbarEl = document.getElementById('userbar');
+const homeLinkEl = document.getElementById('homeLink');
+if (homeLinkEl) homeLinkEl.onclick = () => go('dashboard');
 
 let session = null;
 let cur = 'dashboard';
