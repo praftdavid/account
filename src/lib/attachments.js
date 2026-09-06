@@ -41,9 +41,14 @@ export async function listAttachments(targetType, targetId) {
   return data;
 }
 
+// Supabase Storage는 오브젝트 키에 한글 등 비-ASCII 문자가 들어가면 "Invalid key" 오류를 낸다.
+// 그래서 저장 경로에는 원본 파일명을 절대 쓰지 않고 타임스탬프+확장자만 쓰며(확장자는 거의
+// 항상 영문이라 안전), 사람이 보는 원본 파일명(한글 포함)은 DB의 file_name 컬럼에만 저장해
+// 다운로드 시 downloadAttachment()가 signed URL의 download 옵션으로 되살린다.
 export async function uploadAttachment(targetType, targetId, rawFile, uploaderEmail) {
   const file = await compressImageIfNeeded(rawFile);
-  const path = `${targetType}/${targetId}/${Date.now()}_${file.name}`;
+  const ext = /\.[^./\\]+$/.exec(file.name)?.[0] ?? '';
+  const path = `${targetType}/${targetId}/${Date.now()}_${crypto.randomUUID()}${ext}`;
   const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, file);
   if (upErr) throw upErr;
 
@@ -72,7 +77,9 @@ export async function deleteAttachment(attachment) {
 // createSignedUrl의 await 이후에 window.open을 호출하면 사용자 제스처 컨텍스트를 벗어나
 // 브라우저 팝업 차단에 걸리기 때문에, 탭은 미리 열고 URL만 나중에 채워 넣는다.
 export async function downloadAttachment(attachment, win) {
-  const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(attachment.storage_path, 3600);
+  const { data, error } = await supabase.storage
+    .from(BUCKET)
+    .createSignedUrl(attachment.storage_path, 3600, { download: attachment.file_name });
   if (error) {
     win?.close();
     throw error;

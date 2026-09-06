@@ -1,6 +1,6 @@
 import { supabase } from '../../lib/supabaseClient.js';
 import { esc, todayStr } from '../../lib/util.js';
-import { renderAttachmentsWidget } from '../../lib/attachments.js';
+import { renderAttachmentsWidget, uploadAttachment } from '../../lib/attachments.js';
 import { fetchDepartments } from '../lib/departments.js';
 import { DOC_TYPES, EVIDENCE_TYPES, TAX_TREATMENTS, requiresIssuer } from '../lib/letterhead.js';
 import { renderLetterheadBody, openLetterheadPrint } from '../lib/letterheadPrint.js';
@@ -139,7 +139,7 @@ function expenseFieldsBlock(doc, accounts) {
     <div><label>증빙유형</label><select id="f_evidence">${evidenceOptions}</select></div>
     <div style="grid-column:span 5"><label>세무처리</label><select id="f_tax">${taxOptions}</select></div>
   </div>
-  <p class="note" style="grid-column:span 12">계정과목은 회계 시스템의 계정과목 목록을 그대로 씁니다. 증빙서류(세금계산서 등)는 저장 후 상세화면에서 첨부파일로 올려주세요.</p>`;
+  <p class="note" style="grid-column:span 12">계정과목은 회계 시스템의 계정과목 목록을 그대로 씁니다. 증빙서류(세금계산서 등)는 아래 첨부파일에 함께 올려주세요.</p>`;
 }
 
 async function renderForm(container) {
@@ -173,6 +173,9 @@ async function renderForm(container) {
       ${officialFieldsBlock(doc)}
       ${expenseFieldsBlock(doc, accounts)}
       <div style="grid-column:span 12"><label>본문 *</label><textarea id="f_body" required rows="10" style="width:100%;padding:10px 12px;border:1px solid transparent;background:var(--bg);border-radius:var(--radius-sm);font-family:inherit;font-size:13px;resize:vertical">${esc(doc?.body ?? '')}</textarea></div>
+      <div style="grid-column:span 12"><label>첨부파일</label><input type="file" id="f_attachments" multiple>
+        <p class="note">PDF·HWPX·Word 등 형식 제한 없이 여러 개를 함께 첨부할 수 있습니다. 통지서·회의안처럼 본문과 같이 올릴 파일을 여기서 바로 선택하세요.</p>
+      </div>
       <div style="grid-column:span 12" class="toolbar">
         <button class="btn" type="submit">저장</button>
         <button class="btn ghost" type="button" id="cancelBtn">취소</button>
@@ -244,16 +247,32 @@ async function renderForm(container) {
       tax_treatment: isExpense ? document.getElementById('f_tax').value || null : null,
     };
 
+    const email = await currentUserEmail();
     if (doc) {
       const { error } = await supabase.from('documents').update(payload).eq('doc_id', doc.doc_id);
       if (error) { errEl.textContent = '저장 실패: ' + error.message; return; }
       currentDocId = doc.doc_id;
     } else {
-      const email = await currentUserEmail();
       const { data, error } = await supabase.from('documents').insert({ ...payload, drafter_email: email }).select().single();
       if (error) { errEl.textContent = '저장 실패: ' + error.message; return; }
       currentDocId = data.doc_id;
+      doc = data; // 첨부파일 업로드 실패로 폼에 머무른 채 재제출해도 중복 생성되지 않도록 갱신
     }
+
+    const files = [...document.getElementById('f_attachments').files];
+    if (files.length > 0) {
+      errEl.textContent = `첨부파일 업로드 중… (0/${files.length})`;
+      for (const [i, file] of files.entries()) {
+        try {
+          await uploadAttachment('document', currentDocId, file, email);
+          errEl.textContent = `첨부파일 업로드 중… (${i + 1}/${files.length})`;
+        } catch (err) {
+          errEl.textContent = `"${file.name}" 첨부 실패: ${err.message} (본문은 저장되었습니다)`;
+          return;
+        }
+      }
+    }
+
     mode = 'view';
     renderDocuments(container);
   });
