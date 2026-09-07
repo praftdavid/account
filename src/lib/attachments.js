@@ -91,6 +91,32 @@ export async function downloadAttachment(attachment) {
   URL.revokeObjectURL(url);
 }
 
+export function isPdfAttachment(attachment) {
+  return /\.pdf$/i.test(attachment.file_name);
+}
+
+// PDF는 브라우저 내장 뷰어로 새 탭에서 바로 볼 수 있어 다운로드 대신 미리보기를 띄운다.
+// win은 클릭 핸들러에서 동기적으로 window.open('', '_blank')로 미리 열어 넘겨받은 빈 탭 —
+// fetch의 await 이후에 열면 사용자 제스처 컨텍스트를 벗어나 팝업 차단에 걸리기 때문에,
+// 탭은 미리 열고 Blob URL만 나중에 채워 넣는다(다운로드와 달리 새 탭이 계속 참조하므로
+// revokeObjectURL은 호출하지 않는다 — 탭이 닫히면 브라우저가 알아서 정리한다).
+export async function previewPdfAttachment(attachment, win) {
+  const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(attachment.storage_path, 3600);
+  if (error) {
+    win?.close();
+    throw error;
+  }
+  const res = await fetch(data.signedUrl);
+  if (!res.ok) {
+    win?.close();
+    throw new Error(`미리보기 실패 (${res.status})`);
+  }
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  if (win) win.location.href = url;
+  else window.open(url, '_blank');
+}
+
 function fmtSize(bytes) {
   if (!bytes) return '';
   if (bytes < 1024) return `${bytes}B`;
@@ -114,7 +140,7 @@ export async function renderAttachmentsWidget(container, targetType, targetId, u
       ${list
         .map(
           (a) => `<tr>
-            <td><a href="#" data-dl="${a.attachment_id}">${esc(a.file_name)}</a></td>
+            <td><a href="#" data-dl="${a.attachment_id}">${esc(a.file_name)}</a>${isPdfAttachment(a) ? ' <span class="note">(미리보기)</span>' : ''}</td>
             <td class="c">${fmtSize(a.file_size)}</td>
             <td class="c">${esc(a.uploaded_by ?? '')}</td>
             ${allowDelete ? `<td class="c"><button class="btn sm ghost" data-del="${a.attachment_id}">삭제</button></td>` : ''}
@@ -139,7 +165,13 @@ export async function renderAttachmentsWidget(container, targetType, targetId, u
   container.querySelectorAll('[data-dl]').forEach((a) => {
     a.onclick = (ev) => {
       ev.preventDefault();
-      downloadAttachment(byId(a.dataset.dl)).catch((err) => alert('다운로드 실패: ' + err.message));
+      const attachment = byId(a.dataset.dl);
+      if (isPdfAttachment(attachment)) {
+        const win = window.open('', '_blank');
+        previewPdfAttachment(attachment, win).catch((err) => alert('미리보기 실패: ' + err.message));
+      } else {
+        downloadAttachment(attachment).catch((err) => alert('다운로드 실패: ' + err.message));
+      }
     };
   });
 
