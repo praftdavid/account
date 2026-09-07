@@ -56,12 +56,12 @@ export async function exportDocumentToDocx(doc, deptName) {
   const children = [
     new Paragraph({
       alignment: AlignmentType.CENTER,
-      children: [new TextRun({ text: COMPANY.slogan, font: FONT_TITLE, bold: true, size: 20 })],
+      children: [new TextRun({ text: COMPANY.slogan, font: FONT_TITLE, size: 20 })],
       spacing: { after: 100 },
     }),
     new Paragraph({
       alignment: AlignmentType.CENTER,
-      children: [new TextRun({ text: COMPANY.name, font: FONT_TITLE, bold: true, size: 36, characterSpacing: TITLE_SPACING })],
+      children: [new TextRun({ text: COMPANY.name, font: FONT_TITLE, size: 36, characterSpacing: TITLE_SPACING })],
       spacing: { after: 300 },
     }),
     new Paragraph({
@@ -116,12 +116,12 @@ export async function exportExpenseResolutionToDocx(doc, deptName, accountLabel)
   const children = [
     new Paragraph({
       alignment: AlignmentType.CENTER,
-      children: [new TextRun({ text: COMPANY.slogan, font: FONT_TITLE, bold: true, size: 20 })],
+      children: [new TextRun({ text: COMPANY.slogan, font: FONT_TITLE, size: 20 })],
       spacing: { after: 100 },
     }),
     new Paragraph({
       alignment: AlignmentType.CENTER,
-      children: [new TextRun({ text: COMPANY.name, font: FONT_TITLE, bold: true, size: 32, characterSpacing: TITLE_SPACING })],
+      children: [new TextRun({ text: COMPANY.name, font: FONT_TITLE, size: 32, characterSpacing: TITLE_SPACING })],
       spacing: { after: 300 },
     }),
     new Paragraph({
