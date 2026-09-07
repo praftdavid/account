@@ -1,6 +1,6 @@
 import { supabase } from '../../lib/supabaseClient.js';
 import { esc, todayStr } from '../../lib/util.js';
-import { renderAttachmentsWidget, uploadAttachment } from '../../lib/attachments.js';
+import { renderAttachmentsWidget, uploadAttachment, listAttachments, deleteAttachment } from '../../lib/attachments.js';
 import { fetchDepartments } from '../lib/departments.js';
 import { DOC_TYPES, EVIDENCE_TYPES, TAX_TREATMENTS, requiresIssuer, FONT_BODY } from '../lib/letterhead.js';
 import { renderLetterheadBody } from '../lib/letterheadPrint.js';
@@ -309,6 +309,7 @@ async function renderDetail(container) {
   } else if (doc.status === 'submitted') {
     actions.push('<button class="btn" id="approveBtn">승인</button>');
     actions.push('<button class="btn danger" id="rejectBtn">반려</button>');
+    actions.push('<button class="btn ghost" id="recallBtn">회수</button>');
   } else if (doc.status === 'rejected') {
     actions.push('<button class="btn ghost" id="editBtn">수정 후 재상신</button>');
   } else if (doc.status === 'approved') {
@@ -411,6 +412,27 @@ async function renderDetail(container) {
         .eq('doc_id', doc.doc_id);
       if (rejErr) { alert('반려 처리 실패: ' + rejErr.message); return; }
       renderDocuments(container);
+    };
+  }
+
+  // 결재선이 대표이사 1인뿐이라 별도 "회수" 상태 없이, 승인/반려 전 상신을 취소하고 싶으면
+  // 문서를 통째로 삭제해 처음부터 다시 기안하게 한다(첨부파일도 스토리지까지 함께 정리).
+  const recallBtn = document.getElementById('recallBtn');
+  if (recallBtn) {
+    recallBtn.onclick = async () => {
+      if (!confirm('이 기안을 회수할까요? 회수하면 문서와 첨부파일이 모두 삭제되며 되돌릴 수 없습니다.')) return;
+      recallBtn.disabled = true;
+      try {
+        const atts = await listAttachments('document', doc.doc_id);
+        for (const a of atts) await deleteAttachment(a);
+        const { error: delErr } = await supabase.from('documents').delete().eq('doc_id', doc.doc_id);
+        if (delErr) throw delErr;
+        resetView();
+        renderDocuments(container);
+      } catch (err) {
+        alert('회수 실패: ' + err.message);
+        recallBtn.disabled = false;
+      }
     };
   }
 
