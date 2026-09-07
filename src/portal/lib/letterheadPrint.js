@@ -10,8 +10,8 @@ export function renderLetterheadBody(doc, deptName) {
     : '';
 
   return `
-<p style="text-align:center;font-family:${FONT_TITLE};font-weight:400;font-size:13px;margin:0 0 6px">${esc(COMPANY.slogan)}</p>
-<h1 style="text-align:center;font-family:${FONT_TITLE};font-size:26px;letter-spacing:4px;margin:10px 0 18px;font-weight:400">${esc(COMPANY.name)}</h1>
+<p style="text-align:center;font-family:${FONT_TITLE};font-weight:500;font-size:13px;margin:0 0 6px">${esc(COMPANY.slogan)}</p>
+<h1 style="text-align:center;font-family:${FONT_TITLE};font-size:26px;letter-spacing:4px;margin:10px 0 18px;font-weight:500">${esc(COMPANY.name)}</h1>
 
 <table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:6px">
   <tr><td style="width:70px;padding:4px 0;vertical-align:top">수신 :</td><td style="padding:4px 0">${esc(recipient)}</td></tr>

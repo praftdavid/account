@@ -26,6 +26,32 @@
   font-weight:700;
   font-display:swap;
 }
+/* 레터헤드 표제부(슬로건·회사명)용 — 경기천년바탕과 같은 경기도청 프로젝트의 "제목 전용" 짝
+   폰트라 관공서 문서 특유의 무게감이 있고, 본문(경기천년바탕)과 톤이 자연스럽게 어울린다. */
+@font-face{
+  font-family:'경기천년제목';
+  src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/2410-3@1.0/Title_Light.woff') format('woff');
+  font-weight:300;
+  font-display:swap;
+}
+@font-face{
+  font-family:'경기천년제목';
+  src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/2410-3@1.0/Title_Medium.woff') format('woff');
+  font-weight:500;
+  font-display:swap;
+}
+@font-face{
+  font-family:'경기천년제목';
+  src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/2410-3@1.0/Title_Bold.woff') format('woff');
+  font-weight:700;
+  font-display:swap;
+}
+@font-face{
+  font-family:'경기천년제목';
+  src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/2410-3@1.0/TitleV.woff') format('woff');
+  font-weight:800;
+  font-display:swap;
+}
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'Pretendard','Apple SD Gothic Neo','Malgun Gothic',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased;}
 header{background:var(--surface);color:var(--text);padding:14px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;border-bottom:1px solid var(--bd);}
