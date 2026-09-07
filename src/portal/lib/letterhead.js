@@ -6,9 +6,18 @@ export const COMPANY = {
   zip: '18014',
   address: '경기도 평택시 고덕국제대로 152',
   phone: '010-4262-7242',
-  fax: '',
+  fax: '0504-157-7242',
   email: 'praft.official@gmail.com',
 };
+
+// 문서 본문은 공문서 느낌의 바탕체, 슬로건·회사명 같은 표제부는 힘 있는 고딕(견고딕 느낌)으로
+// 대비를 준다 — letterheadPrint.js·expenseResolution.js·exportDocx.js가 화면·PDF·Word 세
+// 출력물에서 같은 폰트 조합을 쓰도록 여기 한 곳에만 정의한다.
+// 경기천년바탕을 웹폰트(style.css @font-face)로 우선 적용한다 — 함초롬바탕은 한컴 번들
+// 폰트라 뷰어 PC에 한글이 안 깔려 있으면 안 보이는데, 경기천년바탕은 경기도청이 상업적
+// 이용까지 허용해 무료 배포하는 폰트라 웹폰트로 심어두면 누가 봐도 항상 같은 서체로 보인다.
+export const FONT_BODY = "'경기천년바탕','함초롬바탕','HCR Batang','Batang','바탕',serif";
+export const FONT_TITLE = "'경기천년바탕','HY견고딕','견고딕','Malgun Gothic','Apple SD Gothic Neo',sans-serif";
 
 export const DOC_TYPES = ['기안문', '시행문', '지급회의서'];
 export const EVIDENCE_TYPES = ['세금계산서', '계산서', '신용카드매출전표', '현금영수증', '기타'];

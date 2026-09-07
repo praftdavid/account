@@ -1,14 +1,12 @@
 import { esc, fmt } from '../../lib/util.js';
-import { COMPANY, docNoLabel } from './letterhead.js';
-import { openPrintWindow } from './printWindow.js';
+import { COMPANY, docNoLabel, FONT_TITLE } from './letterhead.js';
 
 // 지급회의서는 기안문/시행문의 공문서 레터헤드와 성격이 달라(대외 발송용이 아니라 내부 지출
 // 승인용) 별도 서식을 쓴다 — 회계 계정과목·지출처·금액·증빙유형·세무처리를 표로 보여준다.
 export function renderExpenseResolutionBody(doc, deptName, accountLabel) {
   return `
-<p style="text-align:center;font-weight:bold;font-size:13px;margin:0 0 6px">${esc(COMPANY.slogan)}</p>
-<h1 style="text-align:center;font-size:22px;letter-spacing:10px;margin:10px 0 6px;font-weight:700">${esc(COMPANY.name)}</h1>
-<p style="text-align:right;font-size:13px;font-weight:bold;margin:0 0 18px">[지급회의서]</p>
+<p style="text-align:center;font-family:${FONT_TITLE};font-size:13px;margin:0 0 6px">${esc(COMPANY.slogan)}</p>
+<h1 style="text-align:center;font-family:${FONT_TITLE};font-size:22px;letter-spacing:10px;margin:10px 0 18px;font-weight:400">${esc(COMPANY.name)}</h1>
 
 <h2 style="text-align:center;font-size:18px;margin:0 0 20px">${esc(doc.title)}</h2>
 
@@ -50,8 +48,4 @@ export function renderExpenseResolutionBody(doc, deptName, accountLabel) {
   <tr><td>문서번호 : ${esc(deptName)}_${esc(docNoLabel(doc))}</td></tr>
 </table>
 <p class="note" style="font-size:11px;margin-top:6px">증빙서류는 아래 첨부파일로 확인하세요.</p>`;
-}
-
-export function openExpensePrint(doc, deptName, accountLabel) {
-  openPrintWindow(doc.title, renderExpenseResolutionBody(doc, deptName, accountLabel));
 }

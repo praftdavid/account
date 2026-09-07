@@ -72,20 +72,23 @@ export async function deleteAttachment(attachment) {
   if (error) throw error;
 }
 
-// 비공개 버킷이라 다운로드는 매번 서명 URL을 발급받아 처리한다(1시간 유효).
-// win은 클릭 핸들러에서 동기적으로 window.open('','_blank')로 미리 열어 넘겨받은 빈 탭 —
-// createSignedUrl의 await 이후에 window.open을 호출하면 사용자 제스처 컨텍스트를 벗어나
-// 브라우저 팝업 차단에 걸리기 때문에, 탭은 미리 열고 URL만 나중에 채워 넣는다.
-export async function downloadAttachment(attachment, win) {
-  const { data, error } = await supabase.storage
-    .from(BUCKET)
-    .createSignedUrl(attachment.storage_path, 3600, { download: attachment.file_name });
-  if (error) {
-    win?.close();
-    throw error;
-  }
-  if (win) win.location.href = data.signedUrl;
-  else window.open(data.signedUrl, '_blank');
+// 비공개 버킷이라 다운로드는 매번 서명 URL을 발급받아 처리한다(1시간 유효). 저장 경로 자체는
+// 한글이 없는 UUID라서, signed URL의 download 옵션(Content-Disposition)에만 기대면 서버의
+// 비-ASCII 파일명 인코딩 방식에 따라 저장 대화상자에 원래 한글 파일명이 아니라 UUID가 뜰 수
+// 있다 — 그래서 실제 파일을 fetch로 받아 Blob으로 만든 뒤 <a download="원본파일명">으로
+// 저장한다. 이러면 브라우저가 서버 헤더와 무관하게 항상 지정한 이름으로 저장한다.
+export async function downloadAttachment(attachment) {
+  const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(attachment.storage_path, 3600);
+  if (error) throw error;
+  const res = await fetch(data.signedUrl);
+  if (!res.ok) throw new Error(`다운로드 실패 (${res.status})`);
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = attachment.file_name;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 function fmtSize(bytes) {
@@ -95,41 +98,48 @@ function fmtSize(bytes) {
   return `${(bytes / 1024 / 1024).toFixed(1)}MB`;
 }
 
-// 문서/규정/부서게시글 상세 화면에서 공통으로 쓰는 첨부파일 목록+업로드 위젯.
+// 문서/규정/부서게시글·프로젝트 화면에서 공통으로 쓰는 첨부파일 목록 위젯.
 // container 안에 자체적으로 렌더링·이벤트 바인딩까지 마치고, 변경 시 스스로 다시 그린다.
-export async function renderAttachmentsWidget(container, targetType, targetId, userEmail) {
+// allowUpload/allowDelete로 화면 성격에 맞게 기능을 뺄 수 있다 — 예: 전자결재는 "입력 중"
+// 화면(작성 폼)에서만 업로드하고, "확인" 화면(상세보기)은 열람 전용(둘 다 false)으로 둬서
+// 입력 단계와 열람 단계가 섞이지 않게 한다.
+export async function renderAttachmentsWidget(container, targetType, targetId, userEmail, options = {}) {
+  const { allowUpload = true, allowDelete = true } = options;
   const list = await listAttachments(targetType, targetId);
 
   container.innerHTML = `
     <h3>첨부파일</h3>
     ${list.length === 0 ? '<p class="note">첨부된 파일이 없습니다.</p>' : `<table>
-      <tr><th>파일명</th><th>크기</th><th>업로드</th><th></th></tr>
+      <tr><th>파일명</th><th>크기</th><th>업로드</th>${allowDelete ? '<th></th>' : ''}</tr>
       ${list
         .map(
           (a) => `<tr>
             <td><a href="#" data-dl="${a.attachment_id}">${esc(a.file_name)}</a></td>
             <td class="c">${fmtSize(a.file_size)}</td>
             <td class="c">${esc(a.uploaded_by ?? '')}</td>
-            <td class="c"><button class="btn sm ghost" data-del="${a.attachment_id}">삭제</button></td>
+            ${allowDelete ? `<td class="c"><button class="btn sm ghost" data-del="${a.attachment_id}">삭제</button></td>` : ''}
           </tr>`
         )
         .join('')}
     </table>`}
-    <div class="toolbar" style="margin-top:10px">
+    ${
+      allowUpload
+        ? `<div class="toolbar" style="margin-top:10px">
       <input type="file" id="attFile">
       <button class="btn sm" id="attUploadBtn">업로드</button>
       <span class="err" id="attErr"></span>
     </div>
-    <p class="note">PDF·HWPX·Word 등 파일 형식 제한 없이 첨부할 수 있습니다. 사진(JPG/PNG)은 업로드 시 자동으로 용량을 줄입니다.</p>`;
+    <p class="note">PDF·HWPX·Word 등 파일 형식 제한 없이 첨부할 수 있습니다. 사진(JPG/PNG)은 업로드 시 자동으로 용량을 줄입니다.</p>`
+        : ''
+    }`;
 
   const byId = (id) => list.find((a) => a.attachment_id === Number(id));
-  const refresh = () => renderAttachmentsWidget(container, targetType, targetId, userEmail);
+  const refresh = () => renderAttachmentsWidget(container, targetType, targetId, userEmail, options);
 
   container.querySelectorAll('[data-dl]').forEach((a) => {
     a.onclick = (ev) => {
       ev.preventDefault();
-      const win = window.open('', '_blank');
-      downloadAttachment(byId(a.dataset.dl), win).catch((err) => alert('다운로드 실패: ' + err.message));
+      downloadAttachment(byId(a.dataset.dl)).catch((err) => alert('다운로드 실패: ' + err.message));
     };
   });
 
@@ -145,21 +155,23 @@ export async function renderAttachmentsWidget(container, targetType, targetId, u
     };
   });
 
-  document.getElementById('attUploadBtn').onclick = async () => {
-    const input = document.getElementById('attFile');
-    const errEl = document.getElementById('attErr');
-    const btn = document.getElementById('attUploadBtn');
-    errEl.textContent = '';
-    if (!input.files[0]) return;
-    btn.disabled = true;
-    btn.textContent = '업로드 중…';
-    try {
-      await uploadAttachment(targetType, targetId, input.files[0], userEmail);
-      refresh();
-    } catch (err) {
-      errEl.textContent = '업로드 실패: ' + err.message;
-      btn.disabled = false;
-      btn.textContent = '업로드';
-    }
-  };
+  if (allowUpload) {
+    document.getElementById('attUploadBtn').onclick = async () => {
+      const input = document.getElementById('attFile');
+      const errEl = document.getElementById('attErr');
+      const btn = document.getElementById('attUploadBtn');
+      errEl.textContent = '';
+      if (!input.files[0]) return;
+      btn.disabled = true;
+      btn.textContent = '업로드 중…';
+      try {
+        await uploadAttachment(targetType, targetId, input.files[0], userEmail);
+        refresh();
+      } catch (err) {
+        errEl.textContent = '업로드 실패: ' + err.message;
+        btn.disabled = false;
+        btn.textContent = '업로드';
+      }
+    };
+  }
 }

@@ -11,6 +11,21 @@
   --radius:16px;--radius-sm:10px;
   --shadow:0 2px 10px rgba(25,31,40,.06);--shadow-md:0 4px 16px rgba(25,31,40,.09);
 }
+/* 문서포털 레터헤드 본문용 — 함초롬바탕(한컴 번들 폰트, 미설치 PC엔 안 보임)의 웹폰트 대체.
+   경기도청이 상업적 이용까지 허용해 무료 배포하는 폰트라, 뷰어 PC에 설치돼 있지 않아도
+   항상 같은 서체로 보인다. */
+@font-face{
+  font-family:'경기천년바탕';
+  src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/2410-3@1.0/Batang_Regular.woff') format('woff');
+  font-weight:400;
+  font-display:swap;
+}
+@font-face{
+  font-family:'경기천년바탕';
+  src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/2410-3@1.0/Batang_Bold.woff') format('woff');
+  font-weight:700;
+  font-display:swap;
+}
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'Pretendard','Apple SD Gothic Neo','Malgun Gothic',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased;}
 header{background:var(--surface);color:var(--text);padding:14px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;border-bottom:1px solid var(--bd);}

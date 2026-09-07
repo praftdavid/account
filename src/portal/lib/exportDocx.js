@@ -2,6 +2,13 @@ import { Document, Packer, Paragraph, TextRun, AlignmentType, BorderStyle } from
 import { fmt } from '../../lib/util.js';
 import { COMPANY, docNoLabel } from './letterhead.js';
 
+// 화면(letterheadPrint.js·expenseResolution.js는 FONT_BODY/FONT_TITLE 사용)과 같은 톤으로,
+// 본문은 공문서 느낌의 경기천년바탕, 슬로건·회사명 표제부는 견고딕으로 대비를 준다.
+// Word는 CSS 웹폰트를 못 쓰고 열람자 PC에 설치된 폰트만 쓸 수 있다 — 두 폰트 다 무료
+// 배포라 화면(웹폰트)보다는 설치율이 낮을 수 있고, 없으면 워드가 알아서 대체 폰트로 보여준다.
+const FONT_BODY = '경기천년바탕';
+const FONT_TITLE = '경기천년바탕';
+
 // 인쇄/화면 미리보기(letterheadPrint.js·expenseResolution.js)와 같은 내용·구조를 Word(.docx)로
 // 다시 만든다. 글자간격은 docx의 letter-spacing 지원이 불안정해서, 한글자씩 띄어써서 맞춘다.
 function spacedOut(text) {
@@ -16,7 +23,10 @@ function hr() {
 }
 
 async function downloadDocx(children, filename) {
-  const wordDoc = new Document({ sections: [{ children }] });
+  const wordDoc = new Document({
+    styles: { default: { document: { run: { font: FONT_BODY } } } },
+    sections: [{ children }],
+  });
   const blob = await Packer.toBlob(wordDoc);
 
   const url = URL.createObjectURL(blob);
@@ -47,17 +57,12 @@ export async function exportDocumentToDocx(doc, deptName) {
   const children = [
     new Paragraph({
       alignment: AlignmentType.CENTER,
-      children: [new TextRun({ text: COMPANY.slogan, bold: true, size: 20 })],
+      children: [new TextRun({ text: COMPANY.slogan, font: FONT_TITLE, size: 20 })],
       spacing: { after: 100 },
     }),
     new Paragraph({
       alignment: AlignmentType.CENTER,
-      children: [new TextRun({ text: spacedOut(COMPANY.name), bold: true, size: 36 })],
-      spacing: { after: 100 },
-    }),
-    new Paragraph({
-      alignment: AlignmentType.RIGHT,
-      children: [new TextRun({ text: `[${doc.doc_type}]`, bold: true, size: 22 })],
+      children: [new TextRun({ text: spacedOut(COMPANY.name), font: FONT_TITLE, size: 36 })],
       spacing: { after: 300 },
     }),
     new Paragraph({
@@ -65,7 +70,7 @@ export async function exportDocumentToDocx(doc, deptName) {
       spacing: { after: 100 },
     }),
     new Paragraph({
-      children: [new TextRun({ text: `제목 : ${doc.title}`, bold: true, size: 22 })],
+      children: [new TextRun({ text: `제목 : ${doc.title}`, size: 22 })],
       spacing: { after: 100 },
     }),
     hr(),
@@ -112,18 +117,13 @@ export async function exportExpenseResolutionToDocx(doc, deptName, accountLabel)
   const children = [
     new Paragraph({
       alignment: AlignmentType.CENTER,
-      children: [new TextRun({ text: COMPANY.slogan, bold: true, size: 20 })],
+      children: [new TextRun({ text: COMPANY.slogan, font: FONT_TITLE, size: 20 })],
       spacing: { after: 100 },
     }),
     new Paragraph({
       alignment: AlignmentType.CENTER,
-      children: [new TextRun({ text: spacedOut(COMPANY.name), bold: true, size: 32 })],
-      spacing: { after: 100 },
-    }),
-    new Paragraph({
-      alignment: AlignmentType.RIGHT,
-      children: [new TextRun({ text: '[지급회의서]', bold: true, size: 22 })],
-      spacing: { after: 200 },
+      children: [new TextRun({ text: spacedOut(COMPANY.name), font: FONT_TITLE, size: 32 })],
+      spacing: { after: 300 },
     }),
     new Paragraph({
       alignment: AlignmentType.CENTER,

@@ -2,10 +2,11 @@ import { supabase } from '../../lib/supabaseClient.js';
 import { esc, todayStr } from '../../lib/util.js';
 import { renderAttachmentsWidget, uploadAttachment } from '../../lib/attachments.js';
 import { fetchDepartments } from '../lib/departments.js';
-import { DOC_TYPES, EVIDENCE_TYPES, TAX_TREATMENTS, requiresIssuer } from '../lib/letterhead.js';
-import { renderLetterheadBody, openLetterheadPrint } from '../lib/letterheadPrint.js';
-import { renderExpenseResolutionBody, openExpensePrint } from '../lib/expenseResolution.js';
+import { DOC_TYPES, EVIDENCE_TYPES, TAX_TREATMENTS, requiresIssuer, FONT_BODY } from '../lib/letterhead.js';
+import { renderLetterheadBody } from '../lib/letterheadPrint.js';
+import { renderExpenseResolutionBody } from '../lib/expenseResolution.js';
 import { exportDocumentToDocx, exportExpenseResolutionToDocx } from '../lib/exportDocx.js';
+import { exportElementToPdf } from '../lib/exportPdf.js';
 import { fetchExpenseAccounts, accountLabel as expenseAccountLabel } from '../lib/expenseAccounts.js';
 import { retentionDeadline } from '../lib/retention.js';
 
@@ -173,7 +174,9 @@ async function renderForm(container) {
       ${officialFieldsBlock(doc)}
       ${expenseFieldsBlock(doc, accounts)}
       <div style="grid-column:span 12"><label>본문 *</label><textarea id="f_body" required rows="10" style="width:100%;padding:10px 12px;border:1px solid transparent;background:var(--bg);border-radius:var(--radius-sm);font-family:inherit;font-size:13px;resize:vertical">${esc(doc?.body ?? '')}</textarea></div>
-      <div style="grid-column:span 12"><label>첨부파일</label><input type="file" id="f_attachments" multiple>
+      <div style="grid-column:span 12">
+        ${doc ? '<div id="existingAttWrap"></div>' : ''}
+        <label>첨부파일 ${doc ? '추가' : ''}</label><input type="file" id="f_attachments" multiple>
         <p class="note">PDF·HWPX·Word 등 형식 제한 없이 여러 개를 함께 첨부할 수 있습니다. 통지서·회의안처럼 본문과 같이 올릴 파일을 여기서 바로 선택하세요.</p>
       </div>
       <div style="grid-column:span 12" class="toolbar">
@@ -184,6 +187,14 @@ async function renderForm(container) {
     </form>
     <p class="note">문서 하단에 발송명의인이 있으면 <b>시행문</b>, 없으면 <b>기안문</b>입니다. 지급회의서는 비용 지출 승인 전용이라 수신/발송명의인 대신 계정과목·금액을 입력합니다. 저장 후 상세화면에서 [상신]을 눌러야 결재가 시작됩니다(문서번호는 상신 시점에 채번). 대표이사 1인 체제라 결재선 없이 상신 즉시 본인이 승인/반려를 결정합니다.</p>
   </div>`;
+
+  if (doc) {
+    const email = await currentUserEmail();
+    renderAttachmentsWidget(document.getElementById('existingAttWrap'), 'document', doc.doc_id, email, {
+      allowUpload: false,
+      allowDelete: true,
+    });
+  }
 
   const typeSel = document.getElementById('f_type');
   const officialWrap = document.getElementById('officialWrap');
@@ -301,7 +312,7 @@ async function renderDetail(container) {
   } else if (doc.status === 'rejected') {
     actions.push('<button class="btn ghost" id="editBtn">수정 후 재상신</button>');
   } else if (doc.status === 'approved') {
-    actions.push('<button class="btn ghost" id="printBtn">인쇄</button>');
+    actions.push('<button class="btn ghost" id="pdfBtn">PDF 저장</button>');
     actions.push('<button class="btn ghost" id="docxBtn">Word 다운로드</button>');
   }
   actions.push('<button class="btn ghost" id="backBtn">목록</button>');
@@ -318,7 +329,7 @@ async function renderDetail(container) {
     </div>
     ${doc.decision_note ? `<p class="note"><b>결재의견</b> — ${esc(doc.decision_note)} (${esc(doc.decided_by ?? '')}, ${doc.decided_at ? String(doc.decided_at).slice(0, 10) : ''})</p>` : ''}
   </div>
-  <div class="card" style="font-family:'Batang','바탕','Malgun Gothic',serif;max-width:800px;margin-left:auto;margin-right:auto">
+  <div class="card" id="letterheadBody" style="font-family:${FONT_BODY};max-width:800px;margin-left:auto;margin-right:auto">
     ${isExpense ? renderExpenseResolutionBody(doc, deptName, acctLabel) : renderLetterheadBody(doc, deptName)}
   </div>
   <div class="card" id="attWrap"></div>`;
@@ -328,8 +339,18 @@ async function renderDetail(container) {
   const editBtn = document.getElementById('editBtn');
   if (editBtn) editBtn.onclick = () => { mode = 'edit'; renderDocuments(container); };
 
-  const printBtn = document.getElementById('printBtn');
-  if (printBtn) printBtn.onclick = () => (isExpense ? openExpensePrint(doc, deptName, acctLabel) : openLetterheadPrint(doc, deptName));
+  const pdfBtn = document.getElementById('pdfBtn');
+  if (pdfBtn) {
+    pdfBtn.onclick = async () => {
+      pdfBtn.disabled = true;
+      try {
+        await exportElementToPdf(document.getElementById('letterheadBody'), `${doc.doc_no ?? doc.title}.pdf`);
+      } catch (err) {
+        alert('PDF 생성 실패: ' + err.message);
+      }
+      pdfBtn.disabled = false;
+    };
+  }
 
   const docxBtn = document.getElementById('docxBtn');
   if (docxBtn) {
@@ -394,5 +415,8 @@ async function renderDetail(container) {
   }
 
   const email = await currentUserEmail();
-  renderAttachmentsWidget(document.getElementById('attWrap'), 'document', doc.doc_id, email);
+  renderAttachmentsWidget(document.getElementById('attWrap'), 'document', doc.doc_id, email, {
+    allowUpload: false,
+    allowDelete: false,
+  });
 }
