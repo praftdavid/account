@@ -7,6 +7,13 @@
       "runtimeArgs": ["/c", "set PATH=C:\\Program Files\\nodejs\\;%PATH% && npm run dev"],
       "port": 5173,
       "autoPort": true
+    },
+    {
+      "name": "praft-preview",
+      "runtimeExecutable": "cmd.exe",
+      "runtimeArgs": ["/c", "set PATH=C:\\Program Files\\nodejs\\;%PATH% && npm run preview -- --port 4173"],
+      "port": 4173,
+      "autoPort": true
     }
   ]
 }

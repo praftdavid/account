@@ -152,10 +152,9 @@ export async function renderAttachmentsWidget(container, targetType, targetId, u
       allowUpload
         ? `<div class="toolbar" style="margin-top:10px">
       <input type="file" id="attFile">
-      <button class="btn sm" id="attUploadBtn">업로드</button>
       <span class="err" id="attErr"></span>
     </div>
-    <p class="note">PDF·HWPX·Word 등 파일 형식 제한 없이 첨부할 수 있습니다. 사진(JPG/PNG)은 업로드 시 자동으로 용량을 줄입니다.</p>`
+    <p class="note">파일을 선택하면 바로 업로드됩니다. PDF·HWPX·Word 등 형식 제한 없이 첨부할 수 있습니다. 사진(JPG/PNG)은 업로드 시 자동으로 용량을 줄입니다.</p>`
         : ''
     }`;
 
@@ -188,21 +187,21 @@ export async function renderAttachmentsWidget(container, targetType, targetId, u
   });
 
   if (allowUpload) {
-    document.getElementById('attUploadBtn').onclick = async () => {
+    document.getElementById('attFile').onchange = async () => {
       const input = document.getElementById('attFile');
       const errEl = document.getElementById('attErr');
-      const btn = document.getElementById('attUploadBtn');
-      errEl.textContent = '';
       if (!input.files[0]) return;
-      btn.disabled = true;
-      btn.textContent = '업로드 중…';
+      input.disabled = true;
+      errEl.style.color = 'var(--text-mute)';
+      errEl.textContent = '업로드 중…';
       try {
         await uploadAttachment(targetType, targetId, input.files[0], userEmail);
         refresh();
       } catch (err) {
+        errEl.style.color = '';
         errEl.textContent = '업로드 실패: ' + err.message;
-        btn.disabled = false;
-        btn.textContent = '업로드';
+        input.disabled = false;
+        input.value = '';
       }
     };
   }
