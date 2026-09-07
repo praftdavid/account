@@ -6,7 +6,7 @@ import { COMPANY, docNoLabel, FONT_TITLE } from './letterhead.js';
 export function renderExpenseResolutionBody(doc, deptName, accountLabel) {
   return `
 <p style="text-align:center;font-family:${FONT_TITLE};font-weight:700;font-size:13px;margin:0 0 6px">${esc(COMPANY.slogan)}</p>
-<h1 style="text-align:center;font-family:${FONT_TITLE};font-size:22px;letter-spacing:10px;margin:10px 0 18px;font-weight:700">${esc(COMPANY.name)}</h1>
+<h1 style="text-align:center;font-family:${FONT_TITLE};font-size:22px;letter-spacing:3px;margin:10px 0 18px;font-weight:700">${esc(COMPANY.name)}</h1>
 
 <h2 style="text-align:center;font-size:18px;margin:0 0 20px">${esc(doc.title)}</h2>
 

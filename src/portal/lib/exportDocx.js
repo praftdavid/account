@@ -10,10 +10,9 @@ const FONT_BODY = '경기천년바탕';
 const FONT_TITLE = 'Pretendard';
 
 // 인쇄/화면 미리보기(letterheadPrint.js·expenseResolution.js)와 같은 내용·구조를 Word(.docx)로
-// 다시 만든다. 글자간격은 docx의 letter-spacing 지원이 불안정해서, 한글자씩 띄어써서 맞춘다.
-function spacedOut(text) {
-  return text.split('').join(' ');
-}
+// 다시 만든다. 회사명 자간은 characterSpacing(twip, 1pt=20twip)으로 화면의 letter-spacing과
+// 맞춘다.
+const TITLE_SPACING = 60; // 화면 letter-spacing:4px에 대응(약 3pt)
 
 function hr() {
   return new Paragraph({
@@ -62,7 +61,7 @@ export async function exportDocumentToDocx(doc, deptName) {
     }),
     new Paragraph({
       alignment: AlignmentType.CENTER,
-      children: [new TextRun({ text: spacedOut(COMPANY.name), font: FONT_TITLE, bold: true, size: 36 })],
+      children: [new TextRun({ text: COMPANY.name, font: FONT_TITLE, bold: true, size: 36, characterSpacing: TITLE_SPACING })],
       spacing: { after: 300 },
     }),
     new Paragraph({
@@ -122,7 +121,7 @@ export async function exportExpenseResolutionToDocx(doc, deptName, accountLabel)
     }),
     new Paragraph({
       alignment: AlignmentType.CENTER,
-      children: [new TextRun({ text: spacedOut(COMPANY.name), font: FONT_TITLE, bold: true, size: 32 })],
+      children: [new TextRun({ text: COMPANY.name, font: FONT_TITLE, bold: true, size: 32, characterSpacing: TITLE_SPACING })],
       spacing: { after: 300 },
     }),
     new Paragraph({
