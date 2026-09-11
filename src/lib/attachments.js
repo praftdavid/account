@@ -95,6 +95,12 @@ export function isPdfAttachment(attachment) {
   return /\.pdf$/i.test(attachment.file_name);
 }
 
+export async function getSignedUrl(attachment) {
+  const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(attachment.storage_path, 3600);
+  if (error) throw error;
+  return data.signedUrl;
+}
+
 function fmtSize(bytes) {
   if (!bytes) return '';
   if (bytes < 1024) return `${bytes}B`;
@@ -117,8 +123,7 @@ export async function renderAttachmentsWidget(container, targetType, targetId, u
   const pdfUrls = {};
   await Promise.all(
     list.filter(isPdfAttachment).map(async (a) => {
-      const { data } = await supabase.storage.from(BUCKET).createSignedUrl(a.storage_path, 3600);
-      if (data) pdfUrls[a.attachment_id] = data.signedUrl;
+      pdfUrls[a.attachment_id] = await getSignedUrl(a).catch(() => null);
     })
   );
 

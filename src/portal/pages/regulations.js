@@ -1,6 +1,6 @@
 import { supabase } from '../../lib/supabaseClient.js';
 import { esc } from '../../lib/util.js';
-import { renderAttachmentsWidget } from '../../lib/attachments.js';
+import { renderAttachmentsWidget, uploadAttachment, listAttachments, isPdfAttachment, getSignedUrl } from '../../lib/attachments.js';
 import { retentionDeadline } from '../lib/retention.js';
 import { COMPANY, FONT_BODY, FONT_TITLE } from '../lib/letterhead.js';
 
@@ -107,7 +107,11 @@ async function renderForm(container) {
       <div style="grid-column:span 3"><label>규정번호</label><input id="f_no" type="text" value="${esc(reg?.reg_no ?? '')}"></div>
       <div style="grid-column:span 3"><label>버전 *</label><input id="f_ver" type="text" required value="${esc(reg?.version ?? '1.0')}"></div>
       <div style="grid-column:span 3"><label>시행일</label><input type="date" id="f_eff" value="${reg?.effective_date ?? ''}"></div>
-      <div style="grid-column:span 12"><label>본문</label><textarea id="f_body" rows="12" style="width:100%;padding:10px 12px;border:1px solid transparent;background:var(--bg);border-radius:var(--radius-sm);font-family:inherit;font-size:13px;resize:vertical">${esc(reg?.body ?? '')}</textarea></div>
+      <div style="grid-column:span 12">
+        ${reg ? '<div id="existingAttWrap"></div>' : ''}
+        <label>규정 파일 ${reg ? '추가' : ''}</label><input type="file" id="f_attachments" multiple>
+        <p class="note">규정·정관 PDF, 한글·워드 파일을 여기서 첨부하세요. 제규정은 문서 내용을 직접 입력하는 곳이 아니라, 이미 작성된 규정 파일을 등록·관리하는 메뉴입니다.</p>
+      </div>
       <div style="grid-column:span 12" class="toolbar">
         <button class="btn" type="submit">저장</button>
         <button class="btn ghost" type="button" id="cancelBtn">취소</button>
@@ -115,6 +119,14 @@ async function renderForm(container) {
       </div>
     </form>
   </div>`;
+
+  if (reg) {
+    const { data: userData } = await supabase.auth.getUser();
+    renderAttachmentsWidget(document.getElementById('existingAttWrap'), 'regulation', reg.reg_id, userData?.user?.email ?? null, {
+      allowUpload: false,
+      allowDelete: true,
+    });
+  }
 
   document.getElementById('cancelBtn').onclick = () => {
     mode = reg ? 'view' : 'list';
@@ -133,7 +145,6 @@ async function renderForm(container) {
       reg_no: document.getElementById('f_no').value.trim() || null,
       version: document.getElementById('f_ver').value.trim(),
       effective_date: document.getElementById('f_eff').value || null,
-      body: document.getElementById('f_body').value,
       updated_at: new Date().toISOString(),
     };
 
@@ -145,7 +156,25 @@ async function renderForm(container) {
       const { data, error } = await supabase.from('regulations').insert(payload).select().single();
       if (error) { errEl.textContent = '저장 실패: ' + error.message; return; }
       currentRegId = data.reg_id;
+      reg = data; // 첨부파일 업로드 실패로 폼에 머무른 채 재제출해도 중복 생성되지 않도록 갱신
     }
+
+    const files = [...document.getElementById('f_attachments').files];
+    if (files.length > 0) {
+      const { data: userData } = await supabase.auth.getUser();
+      const email = userData?.user?.email ?? null;
+      errEl.textContent = `첨부파일 업로드 중… (0/${files.length})`;
+      for (const [i, file] of files.entries()) {
+        try {
+          await uploadAttachment('regulation', currentRegId, file, email);
+          errEl.textContent = `첨부파일 업로드 중… (${i + 1}/${files.length})`;
+        } catch (err) {
+          errEl.textContent = `"${file.name}" 첨부 실패: ${err.message} (규정 정보는 저장되었습니다)`;
+          return;
+        }
+      }
+    }
+
     mode = 'view';
     renderRegulations(container);
   });
@@ -157,6 +186,14 @@ async function renderDetail(container) {
     container.innerHTML = `<div class="card"><p class="err">규정 조회 실패: ${esc(error.message)}</p></div>`;
     return;
   }
+
+  // 제규정은 본문을 직접 타이핑하는 화면이 아니라 이미 만들어진 규정 파일을 등록해두는
+  // 메뉴라, "미리보기"는 타이핑된 본문 대신 첨부된 규정 PDF 자체를 그대로 화면에 띄운다.
+  const atts = await listAttachments('regulation', reg.reg_id);
+  const pdfAtts = atts.filter(isPdfAttachment);
+  const pdfPreviews = await Promise.all(
+    pdfAtts.map(async (a) => ({ file_name: a.file_name, url: await getSignedUrl(a).catch(() => null) }))
+  );
 
   container.innerHTML = `
   <div class="card">
@@ -178,11 +215,21 @@ async function renderDetail(container) {
       <tr><td style="width:25%;padding:4px 0">구분 : ${esc(reg.category)}</td><td style="padding:4px 0">규정번호 : ${esc(reg.reg_no ?? '')}</td></tr>
       <tr><td style="padding:4px 0">버전 : ${esc(reg.version)}</td><td style="padding:4px 0">시행일 : ${reg.effective_date ?? ''}</td></tr>
     </table>
-    <hr style="border:none;border-top:3px solid #000;margin:0 0 24px">
-    <div style="white-space:pre-wrap;line-height:2;font-size:14px;min-height:160px">${esc(reg.body ?? '')}</div>
-    <hr style="border:none;border-top:1px solid #000;margin:30px 0 6px">
+    <hr style="border:none;border-top:1px solid #000;margin:0 0 6px">
     <p style="font-size:12px">보존기한 : ${esc(retentionDeadline(reg.created_at))}</p>
   </div>
+  ${
+    pdfPreviews.length > 0
+      ? pdfPreviews
+          .map(
+            (p) => `<div class="card">
+        <h3>${esc(p.file_name)}</h3>
+        ${p.url ? `<iframe src="${esc(p.url)}" style="width:100%;height:80vh;border:1px solid var(--bd);border-radius:var(--radius-sm)"></iframe>` : '<p class="err">미리보기 URL을 가져오지 못했습니다.</p>'}
+      </div>`
+          )
+          .join('')
+      : '<div class="card"><p class="note">첨부된 규정 PDF가 없습니다. 아래에서 파일을 첨부해 주세요.</p></div>'
+  }
   <div class="card" id="attWrap"></div>`;
 
   document.getElementById('backBtn').onclick = () => { resetView(); renderRegulations(container); };
