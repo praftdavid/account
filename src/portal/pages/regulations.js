@@ -2,7 +2,6 @@ import { supabase } from '../../lib/supabaseClient.js';
 import { esc } from '../../lib/util.js';
 import { renderAttachmentsWidget, uploadAttachment, listAttachments, isPdfAttachment, getSignedUrl } from '../../lib/attachments.js';
 import { retentionDeadline } from '../lib/retention.js';
-import { COMPANY, FONT_BODY, FONT_TITLE } from '../lib/letterhead.js';
 
 const CATEGORIES = ['정관', '규정', '지침', '기타'];
 const STATUS_LABEL = { active: '시행중', abolished: '폐지' };
@@ -207,16 +206,12 @@ async function renderDetail(container) {
       </span>
     </div>
   </div>
-  <div class="card" style="font-family:${FONT_BODY};max-width:800px;margin-left:auto;margin-right:auto">
-    <p style="text-align:center;font-family:${FONT_TITLE};font-weight:500;font-size:13px;margin:0 0 6px">${esc(COMPANY.slogan)}</p>
-    <h1 style="text-align:center;font-family:${FONT_TITLE};font-weight:500;font-size:26px;letter-spacing:4px;margin:10px 0 24px">${esc(COMPANY.name)}</h1>
-    <h2 style="text-align:center;font-size:19px;margin:0 0 20px">${esc(reg.title)}</h2>
-    <table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:20px">
+  <div class="card">
+    <table style="width:100%;border-collapse:collapse;font-size:14px">
       <tr><td style="width:25%;padding:4px 0">구분 : ${esc(reg.category)}</td><td style="padding:4px 0">규정번호 : ${esc(reg.reg_no ?? '')}</td></tr>
       <tr><td style="padding:4px 0">버전 : ${esc(reg.version)}</td><td style="padding:4px 0">시행일 : ${reg.effective_date ?? ''}</td></tr>
     </table>
-    <hr style="border:none;border-top:1px solid #000;margin:0 0 6px">
-    <p style="font-size:12px">보존기한 : ${esc(retentionDeadline(reg.created_at))}</p>
+    <p class="note" style="margin-top:10px">보존기한 : ${esc(retentionDeadline(reg.created_at))}</p>
   </div>
   ${
     pdfPreviews.length > 0
