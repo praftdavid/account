@@ -127,7 +127,10 @@ async function renderForm(container, departments) {
       <div style="grid-column:span 2"><label>시작일</label><input id="f_start" type="date" value="${todayStr()}"></div>
       <div style="grid-column:span 2"><label>종료 예정일</label><input id="f_end" type="date"></div>
       <div style="grid-column:span 12"><label>프로젝트명 *</label><input id="f_title" type="text" required></div>
-      <div style="grid-column:span 12"><label>개요/목적</label><textarea id="f_desc" rows="4" style="width:100%;padding:10px 12px;border:1px solid transparent;background:var(--bg);border-radius:var(--radius-sm);font-family:inherit;font-size:13px;resize:vertical"></textarea></div>
+      <div style="grid-column:span 12">
+        <label>프로젝트 내용</label>
+        <textarea id="f_desc" rows="12" placeholder="배경, 목표, 주요 내용, 참고사항 등 자유롭게 적어주세요. 저장 후에도 상세화면에서 계속 수정할 수 있습니다." style="width:100%;padding:10px 12px;border:1px solid transparent;background:var(--bg);border-radius:var(--radius-sm);font-family:inherit;font-size:13px;resize:vertical;line-height:1.6"></textarea>
+      </div>
       <div style="grid-column:span 12" class="toolbar">
         <button class="btn" type="submit">만들기</button>
         <button class="btn ghost" type="button" id="cancelBtn">취소</button>
@@ -215,8 +218,19 @@ export async function renderProjectDetailView(container, projectId, { readOnly, 
         <button class="btn ghost" id="backBtn">목록</button>
       </span>
     </div>
-    ${project.description ? `<p class="note" style="white-space:pre-wrap">${esc(project.description)}</p>` : ''}
     <p class="note">${project.start_date ?? '?'} ~ ${project.end_date ?? '?'}</p>
+  </div>
+
+  <div class="card">
+    <div class="toolbar">
+      <h2 style="margin-bottom:0">프로젝트 내용</h2>
+      ${readOnly ? '' : '<button class="btn ghost sm" id="editDescBtn" style="margin-left:auto">수정</button>'}
+    </div>
+    <div id="descView">${
+      project.description
+        ? `<p style="white-space:pre-wrap;font-size:14px;line-height:1.7">${esc(project.description)}</p>`
+        : '<p class="note">작성된 내용이 없습니다.</p>'
+    }</div>
   </div>
 
   <div class="card">
@@ -245,15 +259,15 @@ export async function renderProjectDetailView(container, projectId, { readOnly, 
     ${
       readOnly
         ? ''
-        : `<form id="noteForm" class="toolbar" style="margin-bottom:12px">
-      <input type="text" id="nt_note" placeholder="예: 임시총회 소집통지서 초안 작성함" style="flex:1">
+        : `<form id="noteForm" class="toolbar" style="margin-bottom:12px;align-items:flex-end">
+      <textarea id="nt_note" rows="3" placeholder="예: 오늘 진행상황, 다음 할 일, 이슈 등을 자유롭게 기록하세요" style="flex:1;padding:10px 12px;border:1px solid transparent;background:var(--bg);border-radius:var(--radius-sm);font-family:inherit;font-size:13px;resize:vertical;line-height:1.6"></textarea>
       <button class="btn sm" type="submit">기록</button>
     </form>`
     }
     ${
       notes.length
         ? `<table><tr><th>내용</th><th>작성</th><th>일시</th></tr>${notes
-            .map((n) => `<tr><td>${esc(n.body)}</td><td class="c">${esc(n.author_email ?? '')}</td><td class="c">${String(n.created_at).slice(0, 16).replace('T', ' ')}</td></tr>`)
+            .map((n) => `<tr><td style="white-space:pre-wrap">${esc(n.body)}</td><td class="c">${esc(n.author_email ?? '')}</td><td class="c">${String(n.created_at).slice(0, 16).replace('T', ' ')}</td></tr>`)
             .join('')}</table>`
         : '<p class="note">기록된 메모가 없습니다.</p>'
     }
@@ -279,6 +293,28 @@ export async function renderProjectDetailView(container, projectId, { readOnly, 
       const { error: reErr } = await supabase.from('projects').update({ status: 'active', archived_at: null }).eq('project_id', projectId);
       if (reErr) { alert('처리 실패: ' + reErr.message); return; }
       onBack();
+    };
+  }
+
+  const editDescBtn = document.getElementById('editDescBtn');
+  if (editDescBtn) {
+    editDescBtn.onclick = () => {
+      const descView = document.getElementById('descView');
+      descView.innerHTML = `
+        <textarea id="f_descEdit" rows="14" style="width:100%;padding:10px 12px;border:1px solid transparent;background:var(--bg);border-radius:var(--radius-sm);font-family:inherit;font-size:13px;resize:vertical;line-height:1.6">${esc(project.description ?? '')}</textarea>
+        <div class="toolbar" style="margin-top:10px">
+          <button class="btn sm" id="saveDescBtn">저장</button>
+          <button class="btn ghost sm" id="cancelDescBtn">취소</button>
+          <span class="err" id="descErr"></span>
+        </div>`;
+      editDescBtn.disabled = true;
+      document.getElementById('cancelDescBtn').onclick = () => renderProjectDetailView(container, projectId, { readOnly, onBack });
+      document.getElementById('saveDescBtn').onclick = async () => {
+        const value = document.getElementById('f_descEdit').value.trim() || null;
+        const { error: descErr } = await supabase.from('projects').update({ description: value }).eq('project_id', projectId);
+        if (descErr) { document.getElementById('descErr').textContent = '저장 실패: ' + descErr.message; return; }
+        renderProjectDetailView(container, projectId, { readOnly, onBack });
+      };
     };
   }
 
