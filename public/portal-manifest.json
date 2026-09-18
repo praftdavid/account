@@ -1,7 +1,7 @@
 {
   "name": "PRAFT 문서포털",
   "short_name": "PRAFT 포털",
-  "start_url": "/portal.html",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "background_color": "#f2f4f6",

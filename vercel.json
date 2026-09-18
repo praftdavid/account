@@ -1,5 +1,5 @@
 {
   "rewrites": [
-    { "source": "/portal", "destination": "/portal.html" }
+    { "source": "/accounting", "destination": "/portal.html" }
   ]
 }

@@ -1,7 +1,7 @@
 {
   "name": "PRAFT 관리회계 시스템",
   "short_name": "PRAFT",
-  "start_url": "/",
+  "start_url": "/portal.html",
   "scope": "/",
   "display": "standalone",
   "background_color": "#f2f4f6",
