@@ -12,6 +12,7 @@ let mode = 'list'; // 'list' | 'new' | 'edit' | 'view'
 let currentTradeId = null;
 let sideFilter = 'all';
 let stockFilter = 'all';
+let strategyFilter = 'all';
 let yearFilter = 'all';
 
 export function resetView() {
@@ -44,11 +45,13 @@ async function renderList(container) {
   const years = [...new Set(allTrades.map((t) => yearOf(t.trade_date)))].sort((a, b) => b - a);
   if (!years.includes(new Date().getFullYear())) years.unshift(new Date().getFullYear());
   const stocks = [...new Set(allTrades.map((t) => t.stock_name))].sort();
+  const strategies = [...new Set(allTrades.map((t) => t.strategy).filter(Boolean))].sort();
 
   const trades = allTrades.filter(
     (t) =>
       (sideFilter === 'all' || t.side === sideFilter) &&
       (stockFilter === 'all' || t.stock_name === stockFilter) &&
+      (strategyFilter === 'all' || t.strategy === strategyFilter) &&
       (yearFilter === 'all' || yearOf(t.trade_date) === Number(yearFilter))
   );
 
@@ -56,6 +59,7 @@ async function renderList(container) {
     .map(([k, label]) => `<button class="btn sm ${k === sideFilter ? '' : 'ghost'}" data-filter="${k}">${label}</button>`)
     .join('');
   const stockOptions = ['<option value="all">전체 종목</option>', ...stocks.map((s) => `<option value="${esc(s)}" ${s === stockFilter ? 'selected' : ''}>${esc(s)}</option>`)].join('');
+  const strategyOptions = ['<option value="all">전체 전략</option>', ...strategies.map((s) => `<option value="${esc(s)}" ${s === strategyFilter ? 'selected' : ''}>${esc(s)}</option>`)].join('');
   const yearOptions = ['<option value="all">전체 연도</option>', ...years.map((y) => `<option value="${y}" ${String(y) === yearFilter ? 'selected' : ''}>${y}년</option>`)].join('');
 
   const rows = trades
@@ -64,6 +68,7 @@ async function renderList(container) {
         <td class="c">${t.trade_date}</td>
         <td><a href="#" data-open="${t.trade_id}">${esc(t.stock_name)}</a>${t.ticker ? ` <span class="note">(${esc(t.ticker)})</span>` : ''}</td>
         <td class="c"><span class="badge ${SIDE_BADGE[t.side]}">${SIDE_LABEL[t.side]}</span></td>
+        <td class="c">${esc(t.strategy ?? '')}</td>
         <td class="num">${fmt(t.quantity)}</td>
         <td class="num">${fmt(t.price)}</td>
         <td class="num">${fmt(t.quantity * t.price)}</td>
@@ -77,12 +82,13 @@ async function renderList(container) {
     <div class="toolbar">
       ${tabs}
       <select id="stockSel" style="margin-left:8px">${stockOptions}</select>
+      <select id="strategySel" style="margin-left:8px">${strategyOptions}</select>
       <select id="yearSel" style="margin-left:8px">${yearOptions}</select>
       <button class="btn" id="newTradeBtn" style="margin-left:auto">매매 기록</button>
     </div>
     <div style="overflow-x:auto"><table>
-      <tr><th>거래일</th><th>종목</th><th>구분</th><th>수량</th><th>단가</th><th>총액</th><th>작성자</th></tr>
-      ${rows || '<tr><td colspan="7" class="note" style="text-align:center">등록된 매매일지가 없습니다.</td></tr>'}
+      <tr><th>거래일</th><th>종목</th><th>구분</th><th>전략</th><th>수량</th><th>단가</th><th>총액</th><th>작성자</th></tr>
+      ${rows || '<tr><td colspan="8" class="note" style="text-align:center">등록된 매매일지가 없습니다.</td></tr>'}
     </table></div>
   </div>`;
 
@@ -90,6 +96,7 @@ async function renderList(container) {
     b.onclick = () => { sideFilter = b.dataset.filter; renderTradeLog(container); };
   });
   document.getElementById('stockSel').onchange = (ev) => { stockFilter = ev.target.value; renderTradeLog(container); };
+  document.getElementById('strategySel').onchange = (ev) => { strategyFilter = ev.target.value; renderTradeLog(container); };
   document.getElementById('yearSel').onchange = (ev) => { yearFilter = ev.target.value; renderTradeLog(container); };
   document.getElementById('newTradeBtn').onclick = () => { currentTradeId = null; mode = 'new'; renderTradeLog(container); };
   container.querySelectorAll('[data-open]').forEach((a) => {
@@ -118,6 +125,7 @@ async function renderForm(container) {
       <div style="grid-column:span 3"><label>구분 *</label><select id="f_side"><option value="buy" ${(trade?.side ?? 'buy') === 'buy' ? 'selected' : ''}>매수</option><option value="sell" ${trade?.side === 'sell' ? 'selected' : ''}>매도</option></select></div>
       <div style="grid-column:span 3"><label>수량 *</label><input id="f_qty" type="text" required inputmode="numeric" value="${trade?.quantity != null ? Number(trade.quantity).toLocaleString() : ''}"></div>
       <div style="grid-column:span 3"><label>단가 *</label><input id="f_price" type="text" required inputmode="numeric" value="${trade?.price != null ? Number(trade.price).toLocaleString() : ''}"></div>
+      <div style="grid-column:span 6"><label>전략/셋업</label><input id="f_strategy" type="text" placeholder="예: 브레이크아웃, 저가매수, 실적서프라이즈" value="${esc(trade?.strategy ?? '')}"></div>
       <div style="grid-column:span 12">
         <label>매매근거 *</label>
         <textarea id="f_rationale" rows="10" required placeholder="왜 이 종목을 이 시점에 매수/매도하는지 근거를 적어주세요. 나중에 이 판단을 되짚어볼 유일한 기록입니다." style="width:100%;padding:10px 12px;border:1px solid transparent;background:var(--bg);border-radius:var(--radius-sm);font-family:inherit;font-size:13px;resize:vertical;line-height:1.6">${esc(trade?.rationale ?? '')}</textarea>
@@ -161,6 +169,7 @@ async function renderForm(container) {
       side: document.getElementById('f_side').value,
       quantity: parseThousands(document.getElementById('f_qty').value),
       price: parseThousands(document.getElementById('f_price').value),
+      strategy: document.getElementById('f_strategy').value.trim() || null,
       rationale: document.getElementById('f_rationale').value.trim(),
       updated_at: new Date().toISOString(),
     };
@@ -219,17 +228,46 @@ async function renderDetail(container) {
     <table style="width:100%;border-collapse:collapse;font-size:14px;margin-top:10px">
       <tr><td style="width:25%;padding:4px 0">거래일 : ${trade.trade_date}</td><td style="padding:4px 0">작성자 : ${esc(trade.created_by ?? '')}</td></tr>
       <tr><td style="padding:4px 0">수량 : ${fmt(trade.quantity)}</td><td style="padding:4px 0">단가 : ${fmt(trade.price)}</td></tr>
-      <tr><td style="padding:4px 0">총액 : ${fmt(trade.quantity * trade.price)}</td><td></td></tr>
+      <tr><td style="padding:4px 0">총액 : ${fmt(trade.quantity * trade.price)}</td><td style="padding:4px 0">전략/셋업 : ${esc(trade.strategy ?? '')}</td></tr>
     </table>
   </div>
   <div class="card">
     <h2>매매근거</h2>
     <p style="white-space:pre-wrap;font-size:14px;line-height:1.7">${esc(trade.rationale)}</p>
   </div>
+  <div class="card">
+    <div class="toolbar">
+      <h2 style="margin-bottom:0">결과/복기</h2>
+      <button class="btn ghost sm" id="editReviewBtn" style="margin-left:auto">${trade.review ? '수정' : '작성'}</button>
+    </div>
+    <div id="reviewView">${
+      trade.review
+        ? `<p style="white-space:pre-wrap;font-size:14px;line-height:1.7">${esc(trade.review)}</p>`
+        : '<p class="note">시간이 지난 뒤, 이 판단이 맞았는지 되짚어 적어보세요.</p>'
+    }</div>
+  </div>
   <div class="card" id="attWrap"></div>`;
 
   document.getElementById('backBtn').onclick = () => { resetView(); renderTradeLog(container); };
   document.getElementById('editBtn').onclick = () => { mode = 'edit'; renderTradeLog(container); };
+
+  document.getElementById('editReviewBtn').onclick = () => {
+    const reviewView = document.getElementById('reviewView');
+    reviewView.innerHTML = `
+      <textarea id="f_reviewEdit" rows="8" placeholder="지금 시점에서 돌아봤을 때, 당시 판단이 맞았는지·무엇을 배웠는지 적어주세요." style="width:100%;padding:10px 12px;border:1px solid transparent;background:var(--bg);border-radius:var(--radius-sm);font-family:inherit;font-size:13px;resize:vertical;line-height:1.6">${esc(trade.review ?? '')}</textarea>
+      <div class="toolbar" style="margin-top:10px">
+        <button class="btn sm" id="saveReviewBtn">저장</button>
+        <button class="btn ghost sm" id="cancelReviewBtn">취소</button>
+        <span class="err" id="reviewErr"></span>
+      </div>`;
+    document.getElementById('cancelReviewBtn').onclick = () => renderTradeLog(container);
+    document.getElementById('saveReviewBtn').onclick = async () => {
+      const value = document.getElementById('f_reviewEdit').value.trim() || null;
+      const { error: reviewErr } = await supabase.from('trade_logs').update({ review: value }).eq('trade_id', trade.trade_id);
+      if (reviewErr) { document.getElementById('reviewErr').textContent = '저장 실패: ' + reviewErr.message; return; }
+      renderTradeLog(container);
+    };
+  };
   document.getElementById('deleteBtn').onclick = async () => {
     if (!confirm('이 매매일지를 삭제할까요? 첨부파일도 함께 삭제되며 되돌릴 수 없습니다.')) return;
     try {
