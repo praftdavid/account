@@ -53,7 +53,7 @@
   font-display:swap;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Pretendard','Apple SD Gothic Neo','Malgun Gothic',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased;}
+body{word-break:keep-all;overflow-wrap:break-word;font-family:'Pretendard','Apple SD Gothic Neo','Malgun Gothic',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased;}
 header{background:var(--surface);color:var(--text);padding:14px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;border-bottom:1px solid var(--bd);}
 header h1{font-size:17px;font-weight:700;letter-spacing:-.2px;}
 header h1.home-link{cursor:pointer;}
@@ -144,7 +144,16 @@ select.acct{min-width:180px;}
 .login-card label{display:block;margin:10px 0 5px;}
 .login-card input{width:100%;}
 .login-card .btn{width:100%;margin-top:16px;}
-@media(max-width:800px){form.entry{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:800px){
+  form.entry{grid-template-columns:repeat(2,1fr);}
+  /* 폼 칸들은 데스크톱 12칸 기준 인라인 span으로 폭을 정하는데, 모바일에서 2칸으로 줄이면 span이
+     남아 암시적 열이 생겨 칸이 찌그러진다(라벨이 한 글자씩 줄바꿈됨). 인라인 스타일을 !important로
+     덮어 짧은 칸(span 2~4)은 반폭, 나머지는 전폭으로 정리한다. */
+  form.entry>[style*="grid-column"]{grid-column:1/-1 !important;}
+  form.entry>[style*="span 2"],form.entry>[style*="span 3"],form.entry>[style*="span 4"]{grid-column:span 1 !important;}
+  .grid[style*="grid-template-columns"]{grid-template-columns:1fr 1fr !important;}
+  .grid>[style*="grid-column"]{grid-column:1/-1 !important;}
+}
 .bs-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
 .bs-col table{width:100%;}
 @media(max-width:760px){.bs-grid{grid-template-columns:1fr;}}

@@ -133,7 +133,7 @@ async function renderForm(container) {
       <div style="grid-column:span 3"><label>구분 *</label><select id="f_side"><option value="buy" ${(trade?.side ?? 'buy') === 'buy' ? 'selected' : ''}>매수</option><option value="sell" ${trade?.side === 'sell' ? 'selected' : ''}>매도</option></select></div>
       <div style="grid-column:span 3"><label>수량 *</label><input id="f_qty" type="text" required inputmode="numeric" value="${trade?.quantity != null ? Number(trade.quantity).toLocaleString() : ''}"></div>
       <div style="grid-column:span 3"><label>단가 *</label><input id="f_price" type="text" required inputmode="numeric" value="${trade?.price != null ? Number(trade.price).toLocaleString() : ''}"></div>
-      <div style="grid-column:span 6"><label>전략/셋업</label><input id="f_strategy" type="text" placeholder="예: 브레이크아웃, 저가매수, 실적서프라이즈" value="${esc(trade?.strategy ?? '')}"></div>
+      <div style="grid-column:span 6"><label>전략/셋업</label><input id="f_strategy" type="text" placeholder="예: 브레이크아웃, 저가매수" value="${esc(trade?.strategy ?? '')}"></div>
       <div style="grid-column:span 12">
         <label>매매 이유 분류 * <span class="note">(해당하는 분류를 모두 선택하고, 분류별로 세부 사유를 적어주세요)</span></label>
         <div id="reasonChips" class="toolbar" style="margin:6px 0 0"></div>

@@ -129,7 +129,7 @@ export async function renderAttachmentsWidget(container, targetType, targetId, u
 
   container.innerHTML = `
     <h3>첨부파일</h3>
-    ${list.length === 0 ? '<p class="note">첨부된 파일이 없습니다.</p>' : `<table>
+    ${list.length === 0 ? '<p class="note">첨부된 파일이 없습니다.</p>' : `<div style="overflow-x:auto"><table>
       <tr><th>파일명</th><th>크기</th><th>업로드</th>${allowDelete ? '<th></th>' : ''}</tr>
       ${list
         .map(
@@ -145,7 +145,7 @@ export async function renderAttachmentsWidget(container, targetType, targetId, u
           </tr>`
         )
         .join('')}
-    </table>`}
+    </table></div>`}
     ${
       allowUpload
         ? `<div class="toolbar" style="margin-top:10px">

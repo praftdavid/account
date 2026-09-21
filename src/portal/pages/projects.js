@@ -266,9 +266,9 @@ export async function renderProjectDetailView(container, projectId, { readOnly, 
     }
     ${
       notes.length
-        ? `<table><tr><th>내용</th><th>작성</th><th>일시</th></tr>${notes
+        ? `<div style="overflow-x:auto"><table><tr><th>내용</th><th>작성</th><th>일시</th></tr>${notes
             .map((n) => `<tr><td style="white-space:pre-wrap">${esc(n.body)}</td><td class="c">${esc(n.author_email ?? '')}</td><td class="c">${String(n.created_at).slice(0, 16).replace('T', ' ')}</td></tr>`)
-            .join('')}</table>`
+            .join('')}</table></div>`
         : '<p class="note">기록된 메모가 없습니다.</p>'
     }
   </div>
