@@ -12,8 +12,8 @@ import { retentionDeadline } from '../lib/retention.js';
 
 const EXPENSE_TYPE = '지급회의서';
 
-const STATUS_LABEL = { draft: '기안중', submitted: '결재대기', approved: '승인', rejected: '반려' };
-const STATUS_BADGE = { draft: 'draft', submitted: 'draft', approved: 'ok', rejected: 'bad' };
+const STATUS_LABEL = { draft: '기안중', submitted: '결재대기', approved: '승인', rejected: '반려', recalled: '회수됨' };
+const STATUS_BADGE = { draft: 'draft', submitted: 'draft', approved: 'ok', rejected: 'bad', recalled: 'bad' };
 const DISCLOSURE_TYPES = ['공개', '부분공개', '비공개'];
 
 // 화면 내부 상태 — main.js가 매번 새 컨테이너로 renderDocuments(container)만 호출하므로
@@ -78,7 +78,7 @@ async function renderList(container) {
     (d) => (statusFilter === 'all' || d.status === statusFilter) && (yearFilter === 'all' || yearOf(d.created_at) === Number(yearFilter))
   );
 
-  const tabs = [['all', '전체'], ['draft', '기안중'], ['submitted', '결재대기'], ['approved', '승인'], ['rejected', '반려']]
+  const tabs = [['all', '전체'], ['draft', '기안중'], ['submitted', '결재대기'], ['approved', '승인'], ['rejected', '반려'], ['recalled', '회수됨']]
     .map(([k, label]) => `<button class="btn sm ${k === statusFilter ? '' : 'ghost'}" data-filter="${k}">${label}</button>`)
     .join('');
 
@@ -315,10 +315,15 @@ async function renderDetail(container) {
   } else if (doc.status === 'approved') {
     actions.push('<button class="btn ghost" id="pdfBtn">PDF 저장</button>');
     actions.push('<button class="btn ghost" id="docxBtn">Word 다운로드</button>');
+    actions.push('<button class="btn danger" id="recallApprovedBtn">회수</button>');
+  } else if (doc.status === 'recalled') {
+    actions.push('<button class="btn ghost" id="pdfBtn">PDF 저장</button>');
+    actions.push('<button class="btn ghost" id="docxBtn">Word 다운로드</button>');
   }
   actions.push('<button class="btn ghost" id="backBtn">목록</button>');
 
   const deptName = deptLabel(departments, doc.dept_id) || '(부서없음)';
+  const noteLabel = doc.status === 'recalled' ? '회수 사유' : doc.status === 'rejected' ? '반려 사유' : '결재의견';
 
   container.innerHTML = `
   <div class="card">
@@ -328,7 +333,7 @@ async function renderDetail(container) {
       <span class="note" style="margin-left:8px">${esc(doc.doc_no ?? '(미상신)')} · ${esc(deptName)} · 기안 ${esc(doc.drafter_email)} · 보존기한 ${esc(retentionDeadline(doc.created_at))}</span>
       <span style="margin-left:auto">${actions.join(' ')}</span>
     </div>
-    ${doc.decision_note ? `<p class="note"><b>결재의견</b> — ${esc(doc.decision_note)} (${esc(doc.decided_by ?? '')}, ${doc.decided_at ? String(doc.decided_at).slice(0, 10) : ''})</p>` : ''}
+    ${doc.decision_note ? `<p class="note"><b>${noteLabel}</b> — ${esc(doc.decision_note)} (${esc(doc.decided_by ?? '')}, ${doc.decided_at ? String(doc.decided_at).slice(0, 10) : ''})</p>` : ''}
   </div>
   <div class="card" id="letterheadBody" style="font-family:${FONT_BODY};max-width:800px;margin-left:auto;margin-right:auto">
     ${isExpense ? renderExpenseResolutionBody(doc, deptName, acctLabel) : renderLetterheadBody(doc, deptName)}
@@ -433,6 +438,26 @@ async function renderDetail(container) {
         alert('회수 실패: ' + err.message);
         recallBtn.disabled = false;
       }
+    };
+  }
+
+  // 승인(시행)까지 끝난 문서는 이미 문서번호가 나가 대외적으로 유효했던 기록이라, 위의
+  // 상신 취소와 달리 삭제하지 않는다 — 상태만 "회수됨"으로 바꿔 원문과 회수 사유를 그대로
+  // 남긴다(보존기한 문서를 안전 이유 없이 지우지 않는다는 원칙과 동일).
+  const recallApprovedBtn = document.getElementById('recallApprovedBtn');
+  if (recallApprovedBtn) {
+    recallApprovedBtn.onclick = async () => {
+      const reason = prompt('시행된 문서를 회수합니다. 회수 사유를 입력하세요(필수).');
+      if (reason === null) return;
+      if (!reason.trim()) { alert('회수 사유를 입력해야 합니다.'); return; }
+      recallApprovedBtn.disabled = true;
+      const email = await currentUserEmail();
+      const { error: recallErr } = await supabase
+        .from('documents')
+        .update({ status: 'recalled', decided_at: new Date().toISOString(), decided_by: email, decision_note: reason.trim() })
+        .eq('doc_id', doc.doc_id);
+      if (recallErr) { alert('회수 실패: ' + recallErr.message); recallApprovedBtn.disabled = false; return; }
+      renderDocuments(container);
     };
   }
 
