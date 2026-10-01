@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabaseClient.js';
 import { renderLogin } from '../pages/login.js';
 import { renderDashboard } from './pages/dashboard.js';
+import { renderSchedules, resetView as resetSchedules } from './pages/schedules.js';
 import { renderTradeLog, resetView as resetTradeLog } from './pages/tradeLog.js';
 import { renderDocuments, resetView as resetDocuments } from './pages/documents.js';
 import { renderRegulations, resetView as resetRegulations } from './pages/regulations.js';
@@ -12,13 +13,14 @@ import { esc } from '../lib/util.js';
 // 새 글 작성/수정 화면을 보다가 다른 탭으로 갔다 와도 항상 목록부터 보이도록, 실제 네비게이션
 // (nav 클릭)으로 들어올 때만 해당 화면을 목록 모드로 되돌린다 — 저장 후 상세로 넘어가는 등
 // 페이지 내부 전환은 이 리셋을 거치지 않고 각자 알아서 처리한다.
-const VIEW_RESET = { trades: resetTradeLog, docs: resetDocuments, regs: resetRegulations, projects: resetProjects, archive: resetProjectArchive };
+const VIEW_RESET = { schedules: resetSchedules, trades: resetTradeLog, docs: resetDocuments, regs: resetRegulations, projects: resetProjects, archive: resetProjectArchive };
 
-// 메뉴 배치 원칙 — 실제로 자주 쓰는 순서대로: 대시보드 → 매매일지(주된 사업) → 전자결재 →
-// 프로젝트(진행중 업무관리) → 제규정 → 부서자료(완료 프로젝트 아카이브, 조회 위주) →
-// 기초정보(마스터데이터, 맨 뒤).
+// 메뉴 배치 원칙 — 실제로 자주 쓰는 순서대로: 대시보드 → 일정관리(신고·총회 등 기한 관리) →
+// 매매일지(주된 사업) → 전자결재 → 프로젝트(진행중 업무관리) → 제규정 →
+// 부서자료(완료 프로젝트 아카이브, 조회 위주) → 기초정보(마스터데이터, 맨 뒤).
 const GROUPS = [
   ['home', '대시보드', [['dashboard', '대시보드', renderDashboard]]],
+  ['schedule', '일정관리', [['schedules', '일정관리', renderSchedules]]],
   ['trade', '매매일지', [['trades', '매매일지', renderTradeLog]]],
   ['reg', '제규정', [['regs', '규정목록', renderRegulations]]],
   ['approval', '전자결재', [['docs', '문서함', renderDocuments]]],

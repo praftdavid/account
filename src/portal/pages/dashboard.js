@@ -1,6 +1,7 @@
 import { supabase } from '../../lib/supabaseClient.js';
 import { esc } from '../../lib/util.js';
 import { fetchDepartments } from '../lib/departments.js';
+import { ddayLabel, ddayClass } from './schedules.js';
 
 function dateStr(ts) {
   return ts ? String(ts).slice(0, 10) : '';
@@ -19,12 +20,13 @@ function nearestDue(tasks) {
 // 1인 법인이라 "결재 대기 몇 건" 같은 숫자보다, 지금 부서별로 어떤 프로젝트가 어디까지
 // 진행됐는지가 실제로 매일 들여다볼 정보라서 그걸 홈 화면 맨 앞에 둔다.
 export async function renderDashboard(container) {
-  const [departments, { data: activeProjects }, { count: pendingCount }, { count: regCount }, { data: recentRegs }] = await Promise.all([
+  const [departments, { data: activeProjects }, { count: pendingCount }, { count: regCount }, { data: recentRegs }, { data: upcomingSchedules }] = await Promise.all([
     fetchDepartments({ activeOnly: true }),
     supabase.from('projects').select('*, project_tasks(status, due_date)').eq('status', 'active').order('created_at', { ascending: false }),
     supabase.from('documents').select('*', { count: 'exact', head: true }).eq('status', 'submitted'),
     supabase.from('regulations').select('*', { count: 'exact', head: true }).eq('status', 'active'),
     supabase.from('regulations').select('reg_id,title,category,effective_date').eq('status', 'active').order('updated_at', { ascending: false }).limit(5),
+    supabase.from('schedules').select('*').eq('done', false).order('due_date').limit(8),
   ]);
 
   const projects = activeProjects ?? [];
@@ -66,7 +68,23 @@ export async function renderDashboard(container) {
     )
     .join('');
 
+  const scheduleRows = (upcomingSchedules ?? [])
+    .map(
+      (s) => `<tr>
+        <td class="c">${esc(s.category)}</td>
+        <td>${esc(s.title)}</td>
+        <td class="c">${s.due_date}</td>
+        <td class="c"><span class="badge ${ddayClass(s.due_date, false)}">${ddayLabel(s.due_date)}</span></td>
+      </tr>`
+    )
+    .join('');
+
   container.innerHTML = `
+  <div class="card">
+    <div class="toolbar"><h2 style="margin-bottom:0">다가오는 일정</h2><span class="note" style="margin-left:auto">법인세·부가세 신고기일, 주주총회·이사회 등</span></div>
+    ${scheduleRows ? `<div style="overflow-x:auto"><table><tr><th>분류</th><th>제목</th><th>기한</th><th>D-day</th></tr>${scheduleRows}</table></div>` : '<p class="note">등록된 일정이 없습니다. [일정관리]에서 추가하세요.</p>'}
+  </div>
+
   <div class="card">
     <h2>부서별 프로젝트 진행 현황</h2>
     ${deptSections || '<p class="note">등록된 부서가 없습니다.</p>'}
