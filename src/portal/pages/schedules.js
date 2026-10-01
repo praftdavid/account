@@ -1,6 +1,8 @@
 import { supabase } from '../../lib/supabaseClient.js';
 import { esc, todayStr } from '../../lib/util.js';
-import { SCHEDULE_CATEGORIES } from '../lib/scheduleCategories.js';
+import { SCHEDULE_CATEGORIES, DISPLAY_CATEGORIES } from '../lib/scheduleCategories.js';
+import { openProject } from './projects.js';
+import { navigate } from '../nav.js';
 
 let mode = 'list'; // 'list' | 'new' | 'edit'
 let currentScheduleId = null;
@@ -45,17 +47,43 @@ export function ddayClass(dueDate, done) {
   return 'ok';
 }
 
+// 프로젝트는 자체 메뉴(마감일·진행률·담당자)가 따로 있어 여기서 또 등록받지 않고, 종료
+// 예정일이 있는 진행중 프로젝트를 그대로 끌어와 다른 일정과 같은 목록에 섞어 보여준다.
+// 클릭하면 이 화면 안에 복제해 보여주는 대신 실제 프로젝트 탭의 그 프로젝트 상세로 보낸다.
+export async function fetchProjectDeadlines() {
+  const { data, error } = await supabase.from('projects').select('project_id, title, end_date').eq('status', 'active').not('end_date', 'is', null);
+  if (error) throw error;
+  return (data ?? []).map((p) => ({
+    source: 'project',
+    project_id: p.project_id,
+    category: '프로젝트',
+    title: p.title,
+    due_date: p.end_date,
+    done: false,
+  }));
+}
+
 export async function renderSchedules(container) {
   if (mode === 'list') return renderList(container);
   return renderForm(container);
 }
 
 async function renderList(container) {
-  const { data: allSchedules, error } = await supabase.from('schedules').select('*').order('due_date');
+  const [{ data: rawSchedules, error }, projectDeadlines] = await Promise.all([
+    supabase.from('schedules').select('*').order('due_date'),
+    fetchProjectDeadlines().catch((err) => {
+      console.error(err);
+      return [];
+    }),
+  ]);
   if (error) {
     container.innerHTML = `<div class="card"><p class="err">일정 조회 실패: ${esc(error.message)}</p></div>`;
     return;
   }
+
+  const allSchedules = [...(rawSchedules ?? []).map((s) => ({ ...s, source: 'manual' })), ...projectDeadlines].sort((a, b) =>
+    a.due_date.localeCompare(b.due_date)
+  );
 
   const years = [...new Set(allSchedules.map((s) => yearOf(s.due_date)))].sort((a, b) => b - a);
   if (!years.includes(new Date().getFullYear())) years.unshift(new Date().getFullYear());
@@ -67,7 +95,7 @@ async function renderList(container) {
       (yearFilter === 'all' || yearOf(s.due_date) === Number(yearFilter))
   );
 
-  const tabs = [['all', '전체'], ...SCHEDULE_CATEGORIES.map((c) => [c, c])]
+  const tabs = [['all', '전체'], ...DISPLAY_CATEGORIES.map((c) => [c, c])]
     .map(([k, label]) => `<button class="btn sm ${k === categoryFilter ? '' : 'ghost'}" data-filter="${k}">${label}</button>`)
     .join('');
   const statusOptions = [
@@ -80,8 +108,17 @@ async function renderList(container) {
   const yearOptions = ['<option value="all">전체 연도</option>', ...years.map((y) => `<option value="${y}" ${String(y) === yearFilter ? 'selected' : ''}>${y}년</option>`)].join('');
 
   const rows = schedules
-    .map(
-      (s) => `<tr class="${s.done ? 'inactive' : ''}">
+    .map((s) =>
+      s.source === 'project'
+        ? `<tr>
+        <td></td>
+        <td class="c">${esc(s.category)}</td>
+        <td><a href="#" data-open-project="${s.project_id}">${esc(s.title)}</a></td>
+        <td class="c">${s.due_date}</td>
+        <td class="c"><span class="badge ${ddayClass(s.due_date, false)}">${ddayLabel(s.due_date)}</span></td>
+        <td></td>
+      </tr>`
+        : `<tr class="${s.done ? 'inactive' : ''}">
         <td class="c"><input type="checkbox" data-done="${s.schedule_id}" ${s.done ? 'checked' : ''}></td>
         <td class="c">${esc(s.category)}</td>
         <td><a href="#" data-open="${s.schedule_id}">${esc(s.title)}</a></td>
@@ -114,6 +151,9 @@ async function renderList(container) {
   document.getElementById('newScheduleBtn').onclick = () => { currentScheduleId = null; mode = 'new'; renderSchedules(container); };
   container.querySelectorAll('[data-open]').forEach((a) => {
     a.onclick = (ev) => { ev.preventDefault(); currentScheduleId = Number(a.dataset.open); mode = 'edit'; renderSchedules(container); };
+  });
+  container.querySelectorAll('[data-open-project]').forEach((a) => {
+    a.onclick = (ev) => { ev.preventDefault(); openProject(Number(a.dataset.openProject)); navigate('projects'); };
   });
   container.querySelectorAll('[data-done]').forEach((cb) => {
     cb.onchange = async () => {

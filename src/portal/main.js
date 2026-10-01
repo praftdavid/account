@@ -9,6 +9,7 @@ import { renderProjects, resetView as resetProjects } from './pages/projects.js'
 import { renderProjectArchive, resetView as resetProjectArchive } from './pages/projectArchive.js';
 import { renderDepartments } from './pages/departments.js';
 import { esc } from '../lib/util.js';
+import { setRenderer, getCurrentView, setCurrentView } from './nav.js';
 
 // 새 글 작성/수정 화면을 보다가 다른 탭으로 갔다 와도 항상 목록부터 보이도록, 실제 네비게이션
 // (nav 클릭)으로 들어올 때만 해당 화면을 목록 모드로 되돌린다 — 저장 후 상세로 넘어가는 등
@@ -36,7 +37,6 @@ const homeLinkEl = document.getElementById('homeLink');
 if (homeLinkEl) homeLinkEl.onclick = () => go('dashboard');
 
 let session = null;
-let cur = 'dashboard';
 
 function groupOf(view) {
   return GROUPS.find((g) => g[2].some((v) => v[0] === view));
@@ -44,7 +44,7 @@ function groupOf(view) {
 
 function go(view) {
   VIEW_RESET[view]?.();
-  cur = view;
+  setCurrentView(view);
   render();
 }
 
@@ -59,6 +59,7 @@ async function render() {
   userbarEl.innerHTML = `<span>${esc(session.user.email)}</span><button class="btn ghost sm" id="logoutBtn">로그아웃</button>`;
   document.getElementById('logoutBtn').onclick = () => supabase.auth.signOut();
 
+  const cur = getCurrentView();
   const curGroup = groupOf(cur) ?? GROUPS[0];
 
   navEl.innerHTML = `
@@ -82,6 +83,8 @@ async function render() {
   }
 }
 
+setRenderer(render);
+
 supabase.auth.getSession().then(({ data }) => {
   session = data.session;
   render();
@@ -89,7 +92,7 @@ supabase.auth.getSession().then(({ data }) => {
 
 supabase.auth.onAuthStateChange((_event, newSession) => {
   session = newSession;
-  if (!session) cur = 'dashboard';
+  if (!session) setCurrentView('dashboard');
   render();
 });
 

@@ -18,6 +18,13 @@ export function resetView() {
   currentProjectId = null;
 }
 
+// 대시보드·일정관리에서 "이 프로젝트" 항목을 클릭했을 때, 프로젝트 탭으로 넘어가자마자
+// 목록이 아니라 그 프로젝트 상세가 바로 보이도록 모드를 미리 맞춰둔다.
+export function openProject(projectId) {
+  mode = 'view';
+  currentProjectId = projectId;
+}
+
 async function currentUserEmail() {
   const { data } = await supabase.auth.getUser();
   return data?.user?.email ?? null;
