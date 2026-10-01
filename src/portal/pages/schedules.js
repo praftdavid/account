@@ -9,10 +9,17 @@ let currentScheduleId = null;
 let categoryFilter = 'all';
 let statusFilter = 'upcoming'; // 'upcoming' | 'done' | 'all'
 let yearFilter = 'all';
+const todayDate = new Date(todayStr());
+let calendarYear = todayDate.getFullYear();
+let calendarMonth = todayDate.getMonth() + 1; // 1~12
+let selectedDay = null; // 'YYYY-MM-DD' | null
 
 export function resetView() {
   mode = 'list';
   currentScheduleId = null;
+  calendarYear = todayDate.getFullYear();
+  calendarMonth = todayDate.getMonth() + 1;
+  selectedDay = null;
 }
 
 async function currentUserEmail() {
@@ -88,11 +95,13 @@ async function renderList(container) {
   const years = [...new Set(allSchedules.map((s) => yearOf(s.due_date)))].sort((a, b) => b - a);
   if (!years.includes(new Date().getFullYear())) years.unshift(new Date().getFullYear());
 
+  const isCalendar = categoryFilter === 'all';
+
   const schedules = allSchedules.filter(
     (s) =>
       (categoryFilter === 'all' || s.category === categoryFilter) &&
       (statusFilter === 'all' || (statusFilter === 'done' ? s.done : !s.done)) &&
-      (yearFilter === 'all' || yearOf(s.due_date) === Number(yearFilter))
+      (isCalendar || yearFilter === 'all' || yearOf(s.due_date) === Number(yearFilter))
   );
 
   const tabs = [['all', '전체'], ...DISPLAY_CATEGORIES.map((c) => [c, c])]
@@ -107,6 +116,29 @@ async function renderList(container) {
     .join('');
   const yearOptions = ['<option value="all">전체 연도</option>', ...years.map((y) => `<option value="${y}" ${String(y) === yearFilter ? 'selected' : ''}>${y}년</option>`)].join('');
 
+  container.innerHTML = `
+  <div class="card">
+    <div class="toolbar">
+      ${tabs}
+      <select id="statusSel" style="margin-left:8px">${statusOptions}</select>
+      ${isCalendar ? '' : `<select id="yearSel" style="margin-left:8px">${yearOptions}</select>`}
+      <button class="btn" id="newScheduleBtn" style="margin-left:auto">일정 등록</button>
+    </div>
+    ${isCalendar ? renderCalendarHtml(schedules) : renderTableHtml(schedules)}
+  </div>`;
+
+  container.querySelectorAll('[data-filter]').forEach((b) => {
+    b.onclick = () => { categoryFilter = b.dataset.filter; selectedDay = null; renderSchedules(container); };
+  });
+  document.getElementById('statusSel').onchange = (ev) => { statusFilter = ev.target.value; renderSchedules(container); };
+  document.getElementById('yearSel')?.addEventListener('change', (ev) => { yearFilter = ev.target.value; renderSchedules(container); });
+  document.getElementById('newScheduleBtn').onclick = () => { currentScheduleId = null; mode = 'new'; renderSchedules(container); };
+
+  if (isCalendar) wireCalendar(container, schedules);
+  else wireTable(container);
+}
+
+function renderTableHtml(schedules) {
   const rows = schedules
     .map((s) =>
       s.source === 'project'
@@ -129,26 +161,13 @@ async function renderList(container) {
     )
     .join('');
 
-  container.innerHTML = `
-  <div class="card">
-    <div class="toolbar">
-      ${tabs}
-      <select id="statusSel" style="margin-left:8px">${statusOptions}</select>
-      <select id="yearSel" style="margin-left:8px">${yearOptions}</select>
-      <button class="btn" id="newScheduleBtn" style="margin-left:auto">일정 등록</button>
-    </div>
-    <div style="overflow-x:auto"><table>
+  return `<div style="overflow-x:auto"><table>
       <tr><th></th><th>분류</th><th>제목</th><th>기한</th><th>D-day</th><th></th></tr>
       ${rows || '<tr><td colspan="6" class="note" style="text-align:center">등록된 일정이 없습니다.</td></tr>'}
-    </table></div>
-  </div>`;
+    </table></div>`;
+}
 
-  container.querySelectorAll('[data-filter]').forEach((b) => {
-    b.onclick = () => { categoryFilter = b.dataset.filter; renderSchedules(container); };
-  });
-  document.getElementById('statusSel').onchange = (ev) => { statusFilter = ev.target.value; renderSchedules(container); };
-  document.getElementById('yearSel').onchange = (ev) => { yearFilter = ev.target.value; renderSchedules(container); };
-  document.getElementById('newScheduleBtn').onclick = () => { currentScheduleId = null; mode = 'new'; renderSchedules(container); };
+function wireTable(container) {
   container.querySelectorAll('[data-open]').forEach((a) => {
     a.onclick = (ev) => { ev.preventDefault(); currentScheduleId = Number(a.dataset.open); mode = 'edit'; renderSchedules(container); };
   });
@@ -169,6 +188,115 @@ async function renderList(container) {
       if (delErr) { alert('삭제 실패: ' + delErr.message); return; }
       renderSchedules(container);
     };
+  });
+}
+
+const WEEKDAY_LABELS = ['일', '월', '화', '수', '목', '금', '토'];
+
+function toDateStr(y, m, d) {
+  return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+}
+
+// 달력 칸 안에는 제목을 직접 넣지 않는다 — 긴 한글 제목이 좁은 칸에서 단어 중간에 끊기며
+// 줄바꿈되는 걸 싫어하므로, 칸에는 건수만 보여주고 날짜를 클릭하면 아래 패널에 전체 목록을 띄운다.
+function renderCalendarHtml(schedules) {
+  const itemsByDate = {};
+  for (const s of schedules) {
+    (itemsByDate[s.due_date] ??= []).push(s);
+  }
+
+  const totalDays = new Date(calendarYear, calendarMonth, 0).getDate();
+  const firstWeekday = new Date(calendarYear, calendarMonth - 1, 1).getDay();
+  const todayStrValue = todayStr();
+
+  const headCells = WEEKDAY_LABELS.map(
+    (w, i) => `<div class="cal-head" style="${i === 0 ? 'color:var(--red)' : i === 6 ? 'color:var(--blue)' : ''}">${w}</div>`
+  ).join('');
+
+  const leadingBlanks = Array.from({ length: firstWeekday }, () => '<div class="cal-day empty"></div>').join('');
+  const dayCells = Array.from({ length: totalDays }, (_, i) => {
+    const day = i + 1;
+    const dateStr = toDateStr(calendarYear, calendarMonth, day);
+    const items = itemsByDate[dateStr] ?? [];
+    const isToday = dateStr === todayStrValue;
+    const isSelected = dateStr === selectedDay;
+    return `<div class="cal-day ${isToday ? 'today' : ''} ${isSelected ? 'selected' : ''}" data-day="${dateStr}">
+      <span class="cal-daynum">${day}</span>
+      ${items.length ? `<span class="badge draft cal-count">${items.length}</span>` : ''}
+    </div>`;
+  }).join('');
+  const totalCells = firstWeekday + totalDays;
+  const trailingBlanks = Array.from({ length: (7 - (totalCells % 7)) % 7 }, () => '<div class="cal-day empty"></div>').join('');
+
+  const selectedItems = selectedDay ? itemsByDate[selectedDay] ?? [] : [];
+  const selectedRows = selectedItems
+    .map(
+      (s) => `<div class="cal-agenda-row">
+        <span class="badge ${ddayClass(s.due_date, s.done)}">${esc(s.category)}</span>
+        ${s.source === 'project' ? `<a href="#" data-open-project="${s.project_id}">${esc(s.title)}</a>` : `<a href="#" data-open="${s.schedule_id}">${esc(s.title)}</a>`}
+        <span class="note" style="margin-left:auto">${s.done ? '완료' : ddayLabel(s.due_date)}</span>
+      </div>`
+    )
+    .join('');
+
+  return `
+    <div class="toolbar" style="justify-content:center;gap:18px;margin:10px 0">
+      <button class="btn sm ghost" id="calPrev">‹</button>
+      <h3 style="margin:0;min-width:110px;text-align:center">${calendarYear}년 ${calendarMonth}월</h3>
+      <button class="btn sm ghost" id="calNext">›</button>
+    </div>
+    <div class="cal-grid" id="calGrid">${headCells}${leadingBlanks}${dayCells}${trailingBlanks}</div>
+    ${
+      selectedDay
+        ? `<div class="card" style="margin:14px 0 0;box-shadow:none;border:1px solid var(--bd)">
+            <div class="toolbar"><h3 style="margin:0">${selectedDay}</h3><button class="btn sm ghost" id="calCloseDay" style="margin-left:auto">닫기</button></div>
+            ${selectedRows || '<p class="note">이 날짜에 등록된 일정이 없습니다.</p>'}
+          </div>`
+        : ''
+    }`;
+}
+
+function wireCalendar(container, schedules) {
+  const shiftMonth = (delta) => {
+    let m = calendarMonth + delta;
+    let y = calendarYear;
+    if (m < 1) { m = 12; y -= 1; }
+    if (m > 12) { m = 1; y += 1; }
+    calendarMonth = m;
+    calendarYear = y;
+    selectedDay = null;
+    renderSchedules(container);
+  };
+
+  document.getElementById('calPrev').onclick = () => shiftMonth(-1);
+  document.getElementById('calNext').onclick = () => shiftMonth(1);
+  document.getElementById('calCloseDay')?.addEventListener('click', () => { selectedDay = null; renderSchedules(container); });
+
+  container.querySelectorAll('.cal-day[data-day]').forEach((cell) => {
+    cell.onclick = () => {
+      selectedDay = selectedDay === cell.dataset.day ? null : cell.dataset.day;
+      renderSchedules(container);
+    };
+  });
+
+  // 화살표뿐 아니라 좌우 스와이프로도 전월/다음월 이동 — 모바일에서 달력은 손가락으로
+  // 넘기는 게 자연스럽다.
+  const grid = document.getElementById('calGrid');
+  let touchStartX = null;
+  grid.addEventListener('touchstart', (ev) => { touchStartX = ev.touches[0].clientX; }, { passive: true });
+  grid.addEventListener('touchend', (ev) => {
+    if (touchStartX === null) return;
+    const dx = ev.changedTouches[0].clientX - touchStartX;
+    touchStartX = null;
+    if (Math.abs(dx) < 40) return;
+    shiftMonth(dx < 0 ? 1 : -1);
+  }, { passive: true });
+
+  container.querySelectorAll('[data-open]').forEach((a) => {
+    a.onclick = (ev) => { ev.preventDefault(); currentScheduleId = Number(a.dataset.open); mode = 'edit'; renderSchedules(container); };
+  });
+  container.querySelectorAll('[data-open-project]').forEach((a) => {
+    a.onclick = (ev) => { ev.preventDefault(); openProject(Number(a.dataset.openProject)); navigate('projects'); };
   });
 }
 
