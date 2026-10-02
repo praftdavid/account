@@ -168,7 +168,14 @@ select.acct{min-width:180px;}
 .cal-day.today{border-color:var(--brand);border-width:2px;}
 .cal-day.selected{background:var(--brand-light);border-color:var(--brand);}
 .cal-daynum{font-size:13px;font-weight:600;color:var(--text);}
-.cal-count{font-size:10px;padding:0 5px;}
+.cal-dots{display:flex;gap:3px;justify-content:center;min-height:7px;}
+.cal-dot{display:inline-block;width:7px;height:7px;border-radius:50%;vertical-align:middle;}
+.cal-legend{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-top:12px;}
+.sched-tabs{display:contents;}
+@media(max-width:600px){
+  .sched-tabs{display:flex;flex-wrap:wrap;gap:10px;flex-basis:100%;}
+  .sched-tabs+select{margin-left:0 !important;}
+}
 .cal-agenda-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--bg);}
 .cal-agenda-row:last-child{border-bottom:none;}
 @media(max-width:600px){

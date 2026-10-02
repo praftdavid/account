@@ -1,6 +1,6 @@
 import { supabase } from '../../lib/supabaseClient.js';
 import { esc, todayStr } from '../../lib/util.js';
-import { SCHEDULE_CATEGORIES, DISPLAY_CATEGORIES } from '../lib/scheduleCategories.js';
+import { SCHEDULE_CATEGORIES, DISPLAY_CATEGORIES, CATEGORY_DOT_COLOR } from '../lib/scheduleCategories.js';
 import { openProject } from './projects.js';
 import { navigate } from '../nav.js';
 
@@ -116,10 +116,12 @@ async function renderList(container) {
     .join('');
   const yearOptions = ['<option value="all">전체 연도</option>', ...years.map((y) => `<option value="${y}" ${String(y) === yearFilter ? 'selected' : ''}>${y}년</option>`)].join('');
 
+  // 모바일에서는 분류 탭이 첫 줄, 필터 선택·일정 등록이 둘째 줄이 되도록 탭을 한 덩어리로 묶는다
+  // (데스크톱에서는 display:contents라 예전과 똑같이 한 줄로 흐른다).
   container.innerHTML = `
   <div class="card">
     <div class="toolbar">
-      ${tabs}
+      <div class="sched-tabs">${tabs}</div>
       <select id="statusSel" style="margin-left:8px">${statusOptions}</select>
       ${isCalendar ? '' : `<select id="yearSel" style="margin-left:8px">${yearOptions}</select>`}
       <button class="btn" id="newScheduleBtn" style="margin-left:auto">일정 등록</button>
@@ -222,7 +224,9 @@ function renderCalendarHtml(schedules) {
     const isSelected = dateStr === selectedDay;
     return `<div class="cal-day ${isToday ? 'today' : ''} ${isSelected ? 'selected' : ''}" data-day="${dateStr}">
       <span class="cal-daynum">${day}</span>
-      ${items.length ? `<span class="badge draft cal-count">${items.length}</span>` : ''}
+      <span class="cal-dots">${[...new Set(items.map((s) => s.category))]
+        .map((c) => `<i class="cal-dot" style="background:${CATEGORY_DOT_COLOR[c] ?? 'var(--text-mute)'}"></i>`)
+        .join('')}</span>
     </div>`;
   }).join('');
   const totalCells = firstWeekday + totalDays;
@@ -246,6 +250,9 @@ function renderCalendarHtml(schedules) {
       <button class="btn sm ghost" id="calNext">›</button>
     </div>
     <div class="cal-grid" id="calGrid">${headCells}${leadingBlanks}${dayCells}${trailingBlanks}</div>
+    <div class="note cal-legend">${['세무', '주주총회', '프로젝트', '기타']
+      .map((c) => `<span><i class="cal-dot" style="background:${CATEGORY_DOT_COLOR[c]}"></i> ${c}</span>`)
+      .join('')}</div>
     ${
       selectedDay
         ? `<div class="card" style="margin:14px 0 0;box-shadow:none;border:1px solid var(--bd)">

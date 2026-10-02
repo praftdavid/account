@@ -212,6 +212,10 @@ export async function renderProjectDetailView(container, projectId, { readOnly, 
     )
     .join('');
 
+  // 업무 기한이 프로젝트 종료예정일을 넘으면 일정 달력(종료예정일 기준)과 실제 계획이 어긋나므로 알려준다.
+  const maxTaskDue = tasks.map((t) => t.due_date).filter(Boolean).sort().at(-1) ?? null;
+  const lateDue = maxTaskDue && project.end_date && maxTaskDue > project.end_date ? maxTaskDue : null;
+
   container.innerHTML = `
   <div class="card">
     <div class="toolbar">
@@ -225,7 +229,15 @@ export async function renderProjectDetailView(container, projectId, { readOnly, 
         <button class="btn ghost" id="backBtn">목록</button>
       </span>
     </div>
-    <p class="note">${project.start_date ?? '?'} ~ ${project.end_date ?? '?'}</p>
+    <div id="periodView" class="toolbar" style="margin:6px 0 0">
+      <span class="note" style="margin:0">기간 ${project.start_date ?? '?'} ~ ${project.end_date ?? '?'}</span>
+      ${readOnly ? '' : '<button class="btn ghost sm" id="editPeriodBtn">기간 수정</button>'}
+      ${
+        lateDue
+          ? `<span class="note" style="margin:0;color:var(--red)">업무 기한(${lateDue})이 종료예정일보다 늦습니다.</span>${readOnly ? '' : `<button class="btn sm" id="fitPeriodBtn">종료예정일을 ${lateDue}로 맞추기</button>`}`
+          : ''
+      }
+    </div>
   </div>
 
   <div class="card">
@@ -300,6 +312,36 @@ export async function renderProjectDetailView(container, projectId, { readOnly, 
       const { error: reErr } = await supabase.from('projects').update({ status: 'active', archived_at: null }).eq('project_id', projectId);
       if (reErr) { alert('처리 실패: ' + reErr.message); return; }
       onBack();
+    };
+  }
+
+  const fitPeriodBtn = document.getElementById('fitPeriodBtn');
+  if (fitPeriodBtn) {
+    fitPeriodBtn.onclick = async () => {
+      const { error: fitErr } = await supabase.from('projects').update({ end_date: lateDue }).eq('project_id', projectId);
+      if (fitErr) { alert('저장 실패: ' + fitErr.message); return; }
+      renderProjectDetailView(container, projectId, { readOnly, onBack });
+    };
+  }
+
+  const editPeriodBtn = document.getElementById('editPeriodBtn');
+  if (editPeriodBtn) {
+    editPeriodBtn.onclick = () => {
+      document.getElementById('periodView').innerHTML = `
+        <label style="margin:0">시작일</label><input type="date" id="f_pStart" value="${project.start_date ?? ''}">
+        <label style="margin:0">종료예정일</label><input type="date" id="f_pEnd" value="${project.end_date ?? ''}">
+        <button class="btn sm" id="savePeriodBtn">저장</button>
+        <button class="btn ghost sm" id="cancelPeriodBtn">취소</button>
+        <span class="err" id="periodErr"></span>`;
+      document.getElementById('cancelPeriodBtn').onclick = () => renderProjectDetailView(container, projectId, { readOnly, onBack });
+      document.getElementById('savePeriodBtn').onclick = async () => {
+        const start = document.getElementById('f_pStart').value || null;
+        const end = document.getElementById('f_pEnd').value || null;
+        if (start && end && start > end) { document.getElementById('periodErr').textContent = '종료예정일이 시작일보다 빠릅니다.'; return; }
+        const { error: periodErr } = await supabase.from('projects').update({ start_date: start, end_date: end }).eq('project_id', projectId);
+        if (periodErr) { document.getElementById('periodErr').textContent = '저장 실패: ' + periodErr.message; return; }
+        renderProjectDetailView(container, projectId, { readOnly, onBack });
+      };
     };
   }
 
