@@ -162,7 +162,7 @@ select.acct{min-width:180px;}
    아래 패널에서 전체 목록을 보여준다. 긴 한글 제목을 좁은 칸에 억지로 넣지 않기 위함. */
 .cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;touch-action:pan-y;}
 .cal-head{min-width:0;text-align:center;font-size:12px;font-weight:700;color:var(--text-mute);padding:6px 0;}
-.cal-day{min-width:0;aspect-ratio:1/1;border:1px solid var(--bd);border-radius:var(--radius-sm);padding:4px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:4px;cursor:pointer;background:var(--surface);transition:background .15s ease;}
+.cal-day{min-width:0;height:54px;border:1px solid var(--bd);border-radius:var(--radius-sm);padding:4px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:4px;cursor:pointer;background:var(--surface);transition:background .15s ease;}
 .cal-day:hover{background:var(--bg);}
 .cal-day.empty{visibility:hidden;cursor:default;}
 .cal-day.today{border-color:var(--brand);border-width:2px;}
@@ -180,5 +180,5 @@ select.acct{min-width:180px;}
 .cal-agenda-row:last-child{border-bottom:none;}
 @media(max-width:600px){
   .cal-daynum{font-size:11px;}
-  .cal-day{padding:2px;gap:2px;}
+  .cal-day{padding:2px;gap:2px;height:44px;}
 }
