@@ -9,6 +9,9 @@ import { exportDocumentToDocx, exportExpenseResolutionToDocx } from '../lib/expo
 import { exportElementToPdf } from '../lib/exportPdf.js';
 import { fetchExpenseAccounts, accountLabel as expenseAccountLabel } from '../lib/expenseAccounts.js';
 import { retentionDeadline } from '../lib/retention.js';
+import { logDocEvent, listDocEvents, EVENT_LABEL } from '../lib/docEvents.js';
+import { fetchTemplates } from '../lib/docTemplates.js';
+import { fetchSeal, fetchActiveSeal, loadSealImage, sealDocument } from '../lib/seal.js';
 
 const EXPENSE_TYPE = '지급회의서';
 
@@ -144,7 +147,11 @@ function expenseFieldsBlock(doc, accounts) {
 }
 
 async function renderForm(container) {
-  const [departments, accounts] = await Promise.all([fetchDepartments({ activeOnly: true }), fetchExpenseAccounts()]);
+  const [departments, accounts, templates] = await Promise.all([
+    fetchDepartments({ activeOnly: true }),
+    fetchExpenseAccounts(),
+    fetchTemplates().catch(() => []),
+  ]);
   let doc = null;
   if (mode === 'edit' && currentDocId) {
     const { data, error } = await supabase.from('documents').select('*').eq('doc_id', currentDocId).single();
@@ -167,6 +174,12 @@ async function renderForm(container) {
   <div class="card">
     <h2>${doc ? '기안 수정' : '새 기안 작성'}</h2>
     <form class="entry" id="docForm">
+      ${
+        doc
+          ? ''
+          : `<div style="grid-column:span 12"><label>서식 불러오기</label>
+        <select id="f_template" style="width:100%"><option value="">(서식 선택 — 제목·수신·본문을 채워줍니다)</option>${templates.map((t) => `<option value="${t.template_id}">[${esc(t.doc_type)}] ${esc(t.name)}</option>`).join('')}</select></div>`
+      }
       <div style="grid-column:span 4"><label>문서종류 *</label><select id="f_type">${typeOptions}</select></div>
       <div style="grid-column:span 4"><label>기안부서 *</label><select id="f_dept">${deptOptions}</select></div>
       <div style="grid-column:span 4"><label>공개구분</label><select id="f_disclosure">${disclosureOptions}</select></div>
@@ -182,6 +195,7 @@ async function renderForm(container) {
       <div style="grid-column:span 12" class="toolbar">
         <button class="btn" type="submit">저장</button>
         <button class="btn ghost" type="button" id="cancelBtn">취소</button>
+        <button class="btn ghost" type="button" id="saveTemplateBtn" style="margin-left:auto">서식으로 저장</button>
         <span class="err" id="docErr"></span>
       </div>
     </form>
@@ -214,6 +228,40 @@ async function renderForm(container) {
   };
   typeSel.onchange = syncFieldVisibility;
   syncFieldVisibility();
+
+  const templateSel = document.getElementById('f_template');
+  if (templateSel) {
+    templateSel.onchange = () => {
+      const t = templates.find((x) => x.template_id === Number(templateSel.value));
+      if (!t) return;
+      const bodyEl = document.getElementById('f_body');
+      if (bodyEl.value.trim() && !confirm('작성 중인 내용이 서식 내용으로 바뀝니다. 계속할까요?')) { templateSel.value = ''; return; }
+      typeSel.value = t.doc_type;
+      syncFieldVisibility();
+      document.getElementById('f_title').value = t.title ?? '';
+      document.getElementById('f_recipient').value = t.recipient ?? '';
+      document.getElementById('f_issuer').value = t.issuer_name ?? '';
+      bodyEl.value = t.body ?? '';
+    };
+  }
+
+  document.getElementById('saveTemplateBtn').onclick = async () => {
+    const errEl = document.getElementById('docErr');
+    errEl.textContent = '';
+    const name = prompt('서식 이름을 입력하세요 (예: 임시주주총회 소집통지)');
+    if (!name?.trim()) return;
+    const { error } = await supabase.from('doc_templates').insert({
+      name: name.trim(),
+      doc_type: typeSel.value,
+      title: document.getElementById('f_title').value.trim() || null,
+      recipient: document.getElementById('f_recipient').value.trim() || null,
+      issuer_name: document.getElementById('f_issuer').value.trim() || null,
+      body: document.getElementById('f_body').value || null,
+      created_by: await currentUserEmail(),
+    });
+    if (error) { errEl.textContent = '서식 저장 실패: ' + error.message; return; }
+    alert(`"${name.trim()}" 서식으로 저장했습니다. 다음 기안부터 [서식 불러오기]에서 쓸 수 있습니다.`);
+  };
 
   document.getElementById('cancelBtn').onclick = () => {
     mode = doc ? 'view' : 'list';
@@ -267,6 +315,7 @@ async function renderForm(container) {
       const { data, error } = await supabase.from('documents').insert({ ...payload, drafter_email: email }).select().single();
       if (error) { errEl.textContent = '저장 실패: ' + error.message; return; }
       currentDocId = data.doc_id;
+      await logDocEvent(data.doc_id, 'create');
       doc = data; // 첨부파일 업로드 실패로 폼에 머무른 채 재제출해도 중복 생성되지 않도록 갱신
     }
 
@@ -301,6 +350,17 @@ async function renderDetail(container) {
   const isExpense = doc.doc_type === EXPENSE_TYPE;
   const accounts = isExpense ? await fetchExpenseAccounts() : [];
   const acctLabel = isExpense ? expenseAccountLabel(accounts, doc.account_id) : '';
+  const events = await listDocEvents(doc.doc_id).catch(() => []);
+
+  // 날인된 문서는 직인 이미지를 받아 와서 화면·PDF·Word에 같이 쓴다. 이미지 로딩이 실패해도
+  // 문서 열람은 막지 않는다.
+  let sealInfo = null;
+  let sealImg = null;
+  if (doc.seal_id) {
+    sealInfo = await fetchSeal(doc.seal_id);
+    sealImg = sealInfo ? await loadSealImage(sealInfo).catch(() => null) : null;
+  }
+  const canSeal = doc.status === 'approved' && !doc.seal_id && !isExpense && !!doc.issuer_name?.trim();
 
   const actions = [];
   if (doc.status === 'draft') {
@@ -311,8 +371,10 @@ async function renderDetail(container) {
     actions.push('<button class="btn danger" id="rejectBtn">반려</button>');
     actions.push('<button class="btn ghost" id="recallBtn">회수</button>');
   } else if (doc.status === 'rejected') {
-    actions.push('<button class="btn ghost" id="editBtn">수정 후 재상신</button>');
+    actions.push('<button class="btn ghost" id="editBtn">수정</button>');
+    actions.push('<button class="btn" id="submitBtn">재상신</button>');
   } else if (doc.status === 'approved') {
+    if (canSeal) actions.push('<button class="btn" id="sealBtn">직인 날인</button>');
     actions.push('<button class="btn ghost" id="pdfBtn">PDF 저장</button>');
     actions.push('<button class="btn ghost" id="docxBtn">Word 다운로드</button>');
     actions.push('<button class="btn danger" id="recallApprovedBtn">회수</button>');
@@ -334,9 +396,30 @@ async function renderDetail(container) {
       <span style="margin-left:auto">${actions.join(' ')}</span>
     </div>
     ${doc.decision_note ? `<p class="note"><b>${noteLabel}</b> — ${esc(doc.decision_note)} (${esc(doc.decided_by ?? '')}, ${doc.decided_at ? String(doc.decided_at).slice(0, 10) : ''})</p>` : ''}
+    ${sealInfo ? `<p class="note"><b>직인 날인</b> — ${esc(sealInfo.name)} (${esc(doc.sealed_by ?? '')}, ${String(doc.sealed_at).slice(0, 16).replace('T', ' ')})</p>` : ''}
   </div>
   <div class="card" id="letterheadBody" style="font-family:${FONT_BODY};max-width:800px;margin-left:auto;margin-right:auto">
-    ${isExpense ? renderExpenseResolutionBody(doc, deptName, acctLabel) : renderLetterheadBody(doc, deptName)}
+    ${isExpense ? renderExpenseResolutionBody(doc, deptName, acctLabel) : renderLetterheadBody(doc, deptName, sealImg?.dataUrl ?? null)}
+  </div>
+  <div class="card">
+    <h3>결재 이력</h3>
+    <div style="overflow-x:auto"><table>
+      <tr><th>일시</th><th>처리</th><th>처리자</th><th>비고</th></tr>
+      ${
+        events.length
+          ? events
+              .map(
+                (e) => `<tr>
+          <td class="c">${String(e.created_at).slice(0, 16).replace('T', ' ')}</td>
+          <td class="c">${esc(EVENT_LABEL[e.event_type] ?? e.event_type)}</td>
+          <td class="c">${esc(e.actor_email ?? '')}</td>
+          <td style="white-space:pre-wrap">${esc(e.note ?? '')}</td>
+        </tr>`
+              )
+              .join('')
+          : '<tr><td colspan="4" class="note" style="text-align:center">기록된 이력이 없습니다.</td></tr>'
+      }
+    </table></div>
   </div>
   <div class="card" id="attWrap"></div>`;
 
@@ -364,7 +447,7 @@ async function renderDetail(container) {
       docxBtn.disabled = true;
       try {
         if (isExpense) await exportExpenseResolutionToDocx(doc, deptName, acctLabel);
-        else await exportDocumentToDocx(doc, deptName);
+        else await exportDocumentToDocx(doc, deptName, sealImg?.bytes ?? null);
       } catch (err) {
         alert('Word 생성 실패: ' + err.message);
       }
@@ -383,6 +466,7 @@ async function renderDetail(container) {
           .update({ doc_no, status: 'submitted', submitted_at: new Date().toISOString(), decided_at: null, decided_by: null, decision_note: null })
           .eq('doc_id', doc.doc_id);
         if (subErr) throw subErr;
+        await logDocEvent(doc.doc_id, doc.status === 'rejected' ? 'resubmit' : 'submit', doc_no);
         renderDocuments(container);
       } catch (err) {
         alert('상신 실패: ' + err.message);
@@ -401,6 +485,7 @@ async function renderDetail(container) {
         .update({ status: 'approved', decided_at: new Date().toISOString(), decided_by: email })
         .eq('doc_id', doc.doc_id);
       if (appErr) { alert('승인 실패: ' + appErr.message); approveBtn.disabled = false; return; }
+      await logDocEvent(doc.doc_id, 'approve');
       renderDocuments(container);
     };
   }
@@ -416,6 +501,7 @@ async function renderDetail(container) {
         .update({ status: 'rejected', decided_at: new Date().toISOString(), decided_by: email, decision_note: note || null })
         .eq('doc_id', doc.doc_id);
       if (rejErr) { alert('반려 처리 실패: ' + rejErr.message); return; }
+      await logDocEvent(doc.doc_id, 'reject', note);
       renderDocuments(container);
     };
   }
@@ -457,7 +543,25 @@ async function renderDetail(container) {
         .update({ status: 'recalled', decided_at: new Date().toISOString(), decided_by: email, decision_note: reason.trim() })
         .eq('doc_id', doc.doc_id);
       if (recallErr) { alert('회수 실패: ' + recallErr.message); recallApprovedBtn.disabled = false; return; }
+      await logDocEvent(doc.doc_id, 'recall', reason.trim());
       renderDocuments(container);
+    };
+  }
+
+  const sealBtn = document.getElementById('sealBtn');
+  if (sealBtn) {
+    sealBtn.onclick = async () => {
+      const seal = await fetchActiveSeal();
+      if (!seal) { alert('사용 중인 직인이 없습니다. [기초정보 > 직인관리]에서 직인을 등록하고 사용 지정해 주세요.'); return; }
+      if (!confirm(`"${seal.name}" 직인을 날인합니다. 날인 후에는 취소할 수 없고 날인기록부에 남습니다. 진행할까요?`)) return;
+      sealBtn.disabled = true;
+      try {
+        await sealDocument(doc, seal, await currentUserEmail());
+        renderDocuments(container);
+      } catch (err) {
+        alert('날인 실패: ' + err.message);
+        sealBtn.disabled = false;
+      }
     };
   }
 

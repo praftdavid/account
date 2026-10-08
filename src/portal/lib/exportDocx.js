@@ -1,4 +1,4 @@
-import { Document, Packer, Paragraph, TextRun, AlignmentType, BorderStyle } from 'docx';
+import { Document, Packer, Paragraph, TextRun, ImageRun, AlignmentType, BorderStyle } from 'docx';
 import { fmt } from '../../lib/util.js';
 import { COMPANY, docNoLabel } from './letterhead.js';
 
@@ -36,7 +36,8 @@ async function downloadDocx(children, filename) {
   URL.revokeObjectURL(url);
 }
 
-export async function exportDocumentToDocx(doc, deptName) {
+// sealBytes: 날인된 문서의 직인 PNG 바이트(없으면 "(인)" 글자만 남는다).
+export async function exportDocumentToDocx(doc, deptName, sealBytes = null) {
   const recipient = doc.recipient?.trim() || (doc.doc_type === '시행문' ? '' : '내부결재');
 
   const bodyParagraphs = doc.body.split('\n').map(
@@ -47,7 +48,10 @@ export async function exportDocumentToDocx(doc, deptName) {
     ? [
         new Paragraph({
           alignment: AlignmentType.RIGHT,
-          children: [new TextRun({ text: `${COMPANY.name}  ${doc.issuer_name} (인)`, bold: true, size: 22 })],
+          children: [
+            new TextRun({ text: `${COMPANY.name}  ${doc.issuer_name} ${sealBytes ? '' : '(인)'}`, bold: true, size: 22 }),
+            ...(sealBytes ? [new ImageRun({ type: 'png', data: sealBytes, transformation: { width: 64, height: 64 } })] : []),
+          ],
           spacing: { before: 400, after: 200 },
         }),
       ]

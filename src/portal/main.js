@@ -8,13 +8,15 @@ import { renderRegulations, resetView as resetRegulations } from './pages/regula
 import { renderProjects, resetView as resetProjects } from './pages/projects.js';
 import { renderProjectArchive, resetView as resetProjectArchive } from './pages/projectArchive.js';
 import { renderDepartments } from './pages/departments.js';
+import { renderDocTemplates, resetView as resetDocTemplates } from './pages/docTemplatesPage.js';
+import { renderSeals, renderSealLog } from './pages/seals.js';
 import { esc } from '../lib/util.js';
 import { setRenderer, getCurrentView, setCurrentView } from './nav.js';
 
 // 새 글 작성/수정 화면을 보다가 다른 탭으로 갔다 와도 항상 목록부터 보이도록, 실제 네비게이션
 // (nav 클릭)으로 들어올 때만 해당 화면을 목록 모드로 되돌린다 — 저장 후 상세로 넘어가는 등
 // 페이지 내부 전환은 이 리셋을 거치지 않고 각자 알아서 처리한다.
-const VIEW_RESET = { schedules: resetSchedules, trades: resetTradeLog, docs: resetDocuments, regs: resetRegulations, projects: resetProjects, archive: resetProjectArchive };
+const VIEW_RESET = { schedules: resetSchedules, trades: resetTradeLog, docs: resetDocuments, regs: resetRegulations, projects: resetProjects, archive: resetProjectArchive, templates: resetDocTemplates };
 
 // 메뉴 배치 원칙 — 실제로 자주 쓰는 순서대로: 대시보드 → 일정관리(신고·총회 등 기한 관리) →
 // 매매일지(주된 사업) → 전자결재 → 프로젝트(진행중 업무관리) → 제규정 →
@@ -27,7 +29,16 @@ const GROUPS = [
   ['approval', '전자결재', [['docs', '문서함', renderDocuments]]],
   ['project', '프로젝트', [['projects', '진행 현황', renderProjects]]],
   ['dept', '부서자료', [['archive', '완료 프로젝트', renderProjectArchive]]],
-  ['base', '기초정보', [['depts', '부서관리', renderDepartments]]],
+  [
+    'base',
+    '기초정보',
+    [
+      ['depts', '부서관리', renderDepartments],
+      ['templates', '서식관리', renderDocTemplates],
+      ['seals', '직인관리', renderSeals],
+      ['sealLog', '날인기록부', renderSealLog],
+    ],
+  ],
 ];
 
 const navEl = document.getElementById('nav');

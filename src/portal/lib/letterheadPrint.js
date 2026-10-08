@@ -3,10 +3,15 @@ import { COMPANY, docNoLabel, FONT_TITLE } from './letterhead.js';
 
 // 문서 상세 화면(인라인)과 인쇄 팝업이 이 함수 하나를 공유한다 — 둘 다 "PDF 뷰어처럼 바로
 // 읽히는" 같은 서식을 보여줘야 하기 때문에, 마크업을 두 곳에서 따로 만들지 않는다.
-export function renderLetterheadBody(doc, deptName) {
+export function renderLetterheadBody(doc, deptName, sealDataUrl = null) {
   const recipient = doc.recipient?.trim() || (doc.doc_type === '시행문' ? '' : '내부결재');
+  // 날인된 문서는 "(인)" 글자 대신 이름 끝에 직인 이미지가 살짝 겹치도록 찍는다(PNG는 배경이
+  // 투명하게 저장돼 있다). 글자를 가리지 않게 이름 뒤에 빈 자리를 두고 그 한가운데에 얹는다.
+  const sealMark = sealDataUrl
+    ? `<span style="position:relative;display:inline-block;width:46px;height:1em;vertical-align:baseline"><img src="${sealDataUrl}" alt="직인" style="position:absolute;left:50%;top:50%;width:62px;height:62px;margin:-31px 0 0 -26px"></span>`
+    : '(인)';
   const issuerLine = doc.issuer_name?.trim()
-    ? `<p style="text-align:right;font-size:14px;margin:20px 0 0;font-weight:bold">${esc(COMPANY.name)}&nbsp;&nbsp;${esc(doc.issuer_name)} (인)</p>`
+    ? `<p style="text-align:right;font-size:14px;margin:${sealDataUrl ? '34px 20px 0 0' : '20px 0 0'};font-weight:bold">${esc(COMPANY.name)}&nbsp;&nbsp;${esc(doc.issuer_name)} ${sealMark}</p>`
     : '';
 
   return `
