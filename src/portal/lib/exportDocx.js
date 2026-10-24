@@ -1,13 +1,15 @@
 import { Document, Packer, Paragraph, TextRun, ImageRun, AlignmentType, BorderStyle } from 'docx';
 import { fmt } from '../../lib/util.js';
 import { COMPANY, docNoLabel } from './letterhead.js';
+import { BODY_FONT, TITLE_FONT } from './hwpxCore.js';
 
 // 화면(letterheadPrint.js·expenseResolution.js는 FONT_BODY/FONT_TITLE 사용)과 같은 톤으로,
 // 본문은 경기천년바탕, 슬로건·회사명 표제부는 짝 폰트인 경기천년제목으로 대비를 준다.
 // Word는 CSS 웹폰트를 못 쓰고 열람자 PC에 설치된 폰트만 쓸 수 있다 — 없으면 워드가 알아서
 // 대체 폰트로 보여준다.
-const FONT_BODY = '경기천년바탕';
-const FONT_TITLE = '경기천년제목';
+// 한글·Word 글꼴 목록의 이름은 굵기까지 붙은 형태라 HWPX 내보내기와 같은 상수를 쓴다(이름이 다르면 대체 글꼴로 보인다).
+const FONT_BODY = BODY_FONT;
+const FONT_TITLE = TITLE_FONT;
 
 // 인쇄/화면 미리보기(letterheadPrint.js·expenseResolution.js)와 같은 내용·구조를 Word(.docx)로
 // 다시 만든다. 회사명 자간은 characterSpacing(twip, 1pt=20twip)으로 화면의 letter-spacing과
