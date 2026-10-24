@@ -55,6 +55,12 @@
 /* HWPX 문서는 글꼴 이름을 한글에 설치된 이름("경기천년제목 Medium")으로 갖고 있어서, 캔버스로
    그릴 때 같은 이름의 웹폰트가 있어야 한다. 굵기 범위를 열어 어떤 굵기 요청이든 이 파일로 받는다. */
 @font-face{
+  font-family:'경기천년바탕 Regular';
+  src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/2410-3@1.0/Batang_Regular.woff') format('woff');
+  font-weight:100 900;
+  font-display:swap;
+}
+@font-face{
   font-family:'경기천년제목 Medium';
   src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/2410-3@1.0/Title_Medium.woff') format('woff');
   font-weight:100 900;
