@@ -49,7 +49,7 @@ export function exportHwpx(doc) {
 //   · 나머지 전부 = 본문 → 경기천년바탕
 // 모든 글자가 같은 크기면 제목이 따로 없는 문서로 보고 전부 본문 글꼴로 둔다.
 // Medium/Regular는 굵기라서, 굵게(bold) 표시는 빼야 서식이 의도한 굵기로 나온다(stripBold).
-export async function applyHouseFonts(JSZip, hwpxBytes, { stripBold = true } = {}) {
+export async function applyHouseFonts(JSZip, hwpxBytes, { stripBold = true, titleAtLeast = null } = {}) {
   const zip = await JSZip.loadAsync(hwpxBytes);
   const headerFile = zip.file('Contents/header.xml');
   if (!headerFile) return hwpxBytes;
@@ -68,7 +68,14 @@ export async function applyHouseFonts(JSZip, hwpxBytes, { stripBold = true } = {
   const usedHeights = [...used].map((id) => heights.get(id)).filter((h) => h != null);
   const maxH = Math.max(...usedHeights, 0);
   const minH = Math.min(...usedHeights, Infinity);
-  const titleIds = new Set(maxH > minH ? [...used].filter((id) => heights.get(id) === maxH) : []);
+  // titleAtLeast: 표어·회사명처럼 제목 글꼴이 여러 줄에 필요한 문서는 이 크기 이상을 모두 제목으로 본다.
+  const titleIds = new Set(
+    titleAtLeast != null
+      ? [...used].filter((id) => (heights.get(id) ?? 0) >= titleAtLeast)
+      : maxH > minH
+        ? [...used].filter((id) => heights.get(id) === maxH)
+        : []
+  );
 
   const fontBlock = (lang) =>
     `<hh:fontface lang="${lang}" fontCnt="2">` +

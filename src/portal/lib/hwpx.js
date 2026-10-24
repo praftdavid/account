@@ -1,5 +1,6 @@
 import JSZip from 'jszip';
 import wasmUrl from '@rhwp/core/rhwp_bg.wasm?url';
+import { buildLetterheadHwpx } from './hwpxLetterhead.js';
 import { BODY_FONT, TITLE_FONT, docText, findPlaceholders, fillPlaceholders, exportHwpx, applyHouseFonts, toHwpx } from './hwpxCore.js';
 
 // rhwp(HWP/HWPX 파서·렌더러, WASM 약 11.8MB)는 한글 문서를 실제로 다룰 때만 내려받는다.
@@ -94,4 +95,20 @@ export async function canvasesToPdf(canvases, filename) {
     pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, wMm, hMm);
   }
   pdf?.save(filename);
+}
+
+// 화면에서 직접 쓴 기안문·시행문을 공문서 모양의 HWPX로 만들어 내려받는다. sealDataUrl이 있으면
+// (날인된 문서) 발송명의인 줄 끝에 직인 그림을 넣는다.
+export async function downloadLetterheadHwpx(doc, deptName, sealDataUrl, filename) {
+  const rhwp = await loadRhwp();
+  await ensureFonts();
+  const sealBytes = sealDataUrl ? new Uint8Array(await (await fetch(sealDataUrl)).arrayBuffer()) : null;
+  const { bytes, loss } = await buildLetterheadHwpx(rhwp, JSZip, doc, deptName, sealBytes);
+  const url = URL.createObjectURL(new Blob([bytes], { type: 'application/octet-stream' }));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+  return loss;
 }

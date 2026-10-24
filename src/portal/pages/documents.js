@@ -431,9 +431,11 @@ async function renderDetail(container) {
   } else if (doc.status === 'approved') {
     if (canSeal) actions.push('<button class="btn" id="sealBtn">직인 날인</button>');
     actions.push('<button class="btn ghost" id="pdfBtn">PDF 저장</button>');
+    if (!isExpense) actions.push('<button class="btn ghost" id="hwpxBtn">한글(HWPX) 저장</button>');
     actions.push('<button class="btn danger" id="recallApprovedBtn">회수</button>');
   } else if (doc.status === 'recalled') {
     actions.push('<button class="btn ghost" id="pdfBtn">PDF 저장</button>');
+    if (!isExpense) actions.push('<button class="btn ghost" id="hwpxBtn">한글(HWPX) 저장</button>');
   }
   actions.push('<button class="btn ghost" id="backBtn">목록</button>');
 
@@ -491,6 +493,26 @@ async function renderDetail(container) {
         alert('PDF 생성 실패: ' + err.message);
       }
       pdfBtn.disabled = false;
+    };
+  }
+
+  // 직접 쓴 문서도 편집 가능한 한글 파일로 내려받을 수 있게 공문서 모양의 HWPX를 만든다(Word 대신).
+  const hwpxBtn = document.getElementById('hwpxBtn');
+  if (hwpxBtn) {
+    hwpxBtn.onclick = async () => {
+      hwpxBtn.disabled = true;
+      const label = hwpxBtn.textContent;
+      hwpxBtn.textContent = '만드는 중…';
+      try {
+        const { downloadLetterheadHwpx } = await import('../lib/hwpx.js');
+        const safe = (doc.doc_no ?? doc.title).replace(/[\\/:*?"<>|]/g, '_');
+        const loss = await downloadLetterheadHwpx(doc, deptName, sealImg?.dataUrl ?? null, `${safe}.hwpx`);
+        if (loss.length) alert(`한글 파일을 만드는 중 일부 내용(${loss.length}건)이 빠졌을 수 있습니다. 한글에서 열어 확인해 주세요.`);
+      } catch (err) {
+        alert('한글 파일 생성 실패: ' + (err.message ?? err));
+      }
+      hwpxBtn.textContent = label;
+      hwpxBtn.disabled = false;
     };
   }
 
