@@ -1,5 +1,5 @@
 import { esc, fmt } from '../../lib/util.js';
-import { COMPANY, docNoLabel, FONT_TITLE } from './letterhead.js';
+import { COMPANY, implementationNo, FONT_TITLE } from './letterhead.js';
 
 // 지급회의서는 기안문/시행문의 공문서 레터헤드와 성격이 달라(대외 발송용이 아니라 내부 지출
 // 승인용) 별도 서식을 쓴다 — 회계 계정과목·지출처·금액·증빙유형·세무처리를 표로 보여준다.
@@ -45,7 +45,7 @@ export function renderExpenseResolutionBody(doc, deptName, accountLabel) {
 
 <hr style="border:none;border-top:1px solid #000;margin:30px 0 6px">
 <table style="width:100%;font-size:12px">
-  <tr><td>문서번호 : ${esc(deptName)}_${esc(docNoLabel(doc))}</td></tr>
+  <tr><td>문서번호 : ${esc(implementationNo(doc, deptName))}</td></tr>
 </table>
 <p class="note" style="font-size:11px;margin-top:6px">증빙서류는 아래 첨부파일로 확인하세요.</p>`;
 }

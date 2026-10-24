@@ -27,6 +27,12 @@ export function docNoLabel(doc) {
   return doc.doc_no ?? '(미상신)';
 }
 
+// 시행 번호. doc_no는 이미 "{부서명}_{연도}{일련번호}" 형태라 부서명을 또 붙이면 "경영지원팀_경영지원팀_202601"처럼
+// 겹친다. 상신 전(번호 없음)일 때만 부서명을 붙여 보여준다.
+export function implementationNo(doc, deptName) {
+  return doc.doc_no ?? `${deptName}_(미상신)`;
+}
+
 // 발송명의인이 있으면 시행문 성격 — doc_type 자체가 이미 사용자가 고른 값이지만,
 // 화면에는 이 규칙을 항상 눈에 보이게 안내한다(폼 쪽 검증에도 같이 씀).
 export function requiresIssuer(docType) {

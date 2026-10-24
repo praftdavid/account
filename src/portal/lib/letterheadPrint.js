@@ -1,5 +1,5 @@
 import { esc } from '../../lib/util.js';
-import { COMPANY, docNoLabel, FONT_TITLE } from './letterhead.js';
+import { COMPANY, implementationNo, FONT_TITLE } from './letterhead.js';
 
 // 문서 상세 화면(인라인)과 인쇄 팝업이 이 함수 하나를 공유한다 — 둘 다 "PDF 뷰어처럼 바로
 // 읽히는" 같은 서식을 보여줘야 하기 때문에, 마크업을 두 곳에서 따로 만들지 않는다.
@@ -14,7 +14,11 @@ export function renderLetterheadBody(doc, deptName, sealDataUrl = null) {
     ? `<p style="text-align:right;font-size:14px;margin:${sealDataUrl ? '34px 20px 0 0' : '20px 0 0'};font-weight:bold">${esc(COMPANY.name)}&nbsp;&nbsp;${esc(doc.issuer_name)} ${sealMark}</p>`
     : '';
 
+  // 시행번호·연락처 박스는 본문 길이와 상관없이 문서(A4 비율) 맨 아래에 고정한다 — 본문이 짧다고 박스가
+  // 중간에 뜨면 안 된다. 카드 높이를 A4 비율 이상으로 잡고 박스에 margin-top:auto를 준다.
   return `
+<div style="display:flex;flex-direction:column;min-height:1040px">
+<div>
 <p style="text-align:center;font-family:${FONT_TITLE};font-weight:500;font-size:13px;margin:0 0 6px">${esc(COMPANY.slogan)}</p>
 <h1 style="text-align:center;font-family:${FONT_TITLE};font-size:26px;letter-spacing:4px;margin:10px 0 18px;font-weight:500">${esc(COMPANY.name)}</h1>
 
@@ -29,14 +33,18 @@ ${issuerLine}
 
 <p style="margin-top:${doc.issuer_name?.trim() ? '30' : '60'}px;font-size:14px">수신자 : ${esc(recipient || '(내부)')}</p>
 
+</div>
+<div style="margin-top:auto">
 <hr style="border:none;border-top:1px solid #000;margin:24px 0 6px">
 <table style="width:100%;font-size:12px">
   <tr>
-    <td>시행 : ${esc(deptName)}_${esc(docNoLabel(doc))}</td>
+    <td>시행 : ${esc(implementationNo(doc, deptName))}</td>
   </tr>
 </table>
 <p style="font-size:11px;margin-top:4px;line-height:1.6">
   우 ${esc(COMPANY.zip)}&nbsp;&nbsp;${esc(COMPANY.address)} / 전화 ${esc(COMPANY.phone)} / FAX ${esc(COMPANY.fax)}<br>
   (E-mail : ${esc(COMPANY.email)}) / 공개구분 : ${esc(doc.disclosure ?? '공개')}
-</p>`;
+</p>
+</div>
+</div>`;
 }
