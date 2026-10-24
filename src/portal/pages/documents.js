@@ -5,7 +5,6 @@ import { fetchDepartments } from '../lib/departments.js';
 import { DOC_TYPES, EVIDENCE_TYPES, TAX_TREATMENTS, requiresIssuer, FONT_BODY } from '../lib/letterhead.js';
 import { renderLetterheadBody } from '../lib/letterheadPrint.js';
 import { renderExpenseResolutionBody } from '../lib/expenseResolution.js';
-import { exportDocumentToDocx, exportExpenseResolutionToDocx } from '../lib/exportDocx.js';
 import { exportElementToPdf } from '../lib/exportPdf.js';
 import { fetchExpenseAccounts, accountLabel as expenseAccountLabel } from '../lib/expenseAccounts.js';
 import { retentionDeadline } from '../lib/retention.js';
@@ -192,7 +191,7 @@ async function renderForm(container) {
       <div style="grid-column:span 12">
         ${doc ? '<div id="existingAttWrap"></div>' : ''}
         <label>첨부파일 ${doc ? '추가' : ''}</label><input type="file" id="f_attachments" multiple>
-        <p class="note">PDF·HWPX·Word 등 형식 제한 없이 여러 개를 함께 첨부할 수 있습니다. 통지서·회의안처럼 본문과 같이 올릴 파일을 여기서 바로 선택하세요.</p>
+        <p class="note">PDF·HWPX 등 형식 제한 없이 여러 개를 함께 첨부할 수 있습니다. 통지서·회의안처럼 본문과 같이 올릴 파일을 여기서 바로 선택하세요.</p>
       </div>
       <div style="grid-column:span 12" class="toolbar">
         <button class="btn" type="submit">저장</button>
@@ -408,7 +407,7 @@ async function renderDetail(container) {
   const acctLabel = isExpense ? expenseAccountLabel(accounts, doc.account_id) : '';
   const events = await listDocEvents(doc.doc_id).catch(() => []);
 
-  // 날인된 문서는 직인 이미지를 받아 와서 화면·PDF·Word에 같이 쓴다. 이미지 로딩이 실패해도
+  // 날인된 문서는 직인 이미지를 받아 와서 화면·PDF에 같이 쓴다. 이미지 로딩이 실패해도
   // 문서 열람은 막지 않는다.
   let sealInfo = null;
   let sealImg = null;
@@ -432,11 +431,9 @@ async function renderDetail(container) {
   } else if (doc.status === 'approved') {
     if (canSeal) actions.push('<button class="btn" id="sealBtn">직인 날인</button>');
     actions.push('<button class="btn ghost" id="pdfBtn">PDF 저장</button>');
-    actions.push('<button class="btn ghost" id="docxBtn">Word 다운로드</button>');
     actions.push('<button class="btn danger" id="recallApprovedBtn">회수</button>');
   } else if (doc.status === 'recalled') {
     actions.push('<button class="btn ghost" id="pdfBtn">PDF 저장</button>');
-    actions.push('<button class="btn ghost" id="docxBtn">Word 다운로드</button>');
   }
   actions.push('<button class="btn ghost" id="backBtn">목록</button>');
 
@@ -494,20 +491,6 @@ async function renderDetail(container) {
         alert('PDF 생성 실패: ' + err.message);
       }
       pdfBtn.disabled = false;
-    };
-  }
-
-  const docxBtn = document.getElementById('docxBtn');
-  if (docxBtn) {
-    docxBtn.onclick = async () => {
-      docxBtn.disabled = true;
-      try {
-        if (isExpense) await exportExpenseResolutionToDocx(doc, deptName, acctLabel);
-        else await exportDocumentToDocx(doc, deptName, sealImg?.bytes ?? null);
-      } catch (err) {
-        alert('Word 생성 실패: ' + err.message);
-      }
-      docxBtn.disabled = false;
     };
   }
 

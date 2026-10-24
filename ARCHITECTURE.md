@@ -17,7 +17,7 @@
 - **백엔드**: Supabase — Postgres(데이터), Auth(이메일/비밀번호 로그인), Storage(첨부파일). 별도 서버 코드는 없고, 브라우저가 Supabase 클라이언트로 직접 DB를 호출한다.
 - **배포**: GitHub `praftdavid/account`의 `main` 브랜치 → Vercel 자동 배포(운영).
 - **PWA**: 매니페스트 + 서비스워커(`public/sw.js`). 설치 가능, 네트워크 우선·오프라인 시 캐시 폴백.
-- **주요 라이브러리**: `@supabase/supabase-js`, `docx`(Word 내보내기), `html2canvas` + `jspdf`(PDF 저장), `xlsx`(엑셀), `pdfjs-dist`(증권사 PDF 파싱).
+- **주요 라이브러리**: `@supabase/supabase-js`, `html2canvas` + `jspdf`(PDF 저장), `xlsx`(엑셀), `pdfjs-dist`(증권사 PDF 파싱).
 - **글꼴**: 화면 전체 Pretendard, 문서 미리보기 영역만 경기천년제목(표제부)·경기천년바탕(본문). 둘 다 jsDelivr CDN 웹폰트.
 
 ## 2. 저장소 구조
@@ -113,8 +113,8 @@ URL 라우터가 없다. 각 앱의 `main.js`가 메뉴를 `GROUPS` 배열(그�
 - **서식** (`doc_templates`): 기안 작성 화면의 [서식 불러오기]/[서식으로 저장], 기초정보 > 서식관리.
 - **한글(HWPX) 서식**: 서식에 `.hwp/.hwpx` 파일을 올리면(HWP는 HWPX로 변환해 보관, `doc_templates.hwpx_path`) 문서 안의 `{{자리표시}}`마다 기안 화면에 입력칸이 생기고, 저장하면 값으로 채운 HWPX가 문서 첨부로 붙는다. 한 줄 값만 지원하며, 글꼴은 HWPX 글꼴 정의를 고쳐서 문서 제목(글자가 든 글자모양 중 가장 큰 것)만 `경기천년제목 Medium`, 나머지 본문은 전부 `경기천년바탕 Regular`로 바꾸고 굵게 표시는 뺀다(글꼴 이름이 아니라 역할 기준). 엔진은 `@rhwp/core`(WASM 약 11.8MB, 한글 기능을 쓸 때만 로드). 로직은 `portal/lib/hwpxCore.js`(순수 함수), 로더·캔버스 렌더·PDF는 `hwpx.js`, 미리보기 창은 `hwpxViewer.js`.
 - **HWP/HWPX 첨부 미리보기·PDF**: 첨부 목록의 "(한글 미리보기)"가 쪽별로 캔버스에 그리고 [PDF 저장]으로 이미지 PDF를 만든다. 캔버스 렌더러를 써야 페이지에 로드된 경기천년 웹폰트가 적용된다(SVG를 이미지로 쓰면 웹폰트가 빠진다).
-- **직인 날인** (`seals`, `seal_logs`): 직인 이미지를 올리면 흰 배경을 투명 처리해 PNG로 저장. 사용 지정한 직인 1개가 승인된 시행문의 "(인)" 자리에 찍히고 PDF·Word에 반영된다. 날인은 취소할 수 없고 `seal_logs`(날인기록부)에 한 줄 남는다. 이미 날인에 쓴 직인은 삭제 불가.
-- **출력**: 화면 미리보기는 공문서 서식(`letterheadPrint.js`·`expenseResolution.js`), PDF 저장은 `html2canvas`+`jsPDF`(`exportPdf.js`), Word는 `docx`(`exportDocx.js`).
+- **직인 날인** (`seals`, `seal_logs`): 직인 이미지를 올리면 흰 배경을 투명 처리해 PNG로 저장. 사용 지정한 직인 1개가 승인된 시행문의 "(인)" 자리에 찍히고 화면·PDF에 반영된다. 날인은 취소할 수 없고 `seal_logs`(날인기록부)에 한 줄 남는다. 이미 날인에 쓴 직인은 삭제 불가.
+- **출력**: 화면 미리보기는 공문서 서식(`letterheadPrint.js`·`expenseResolution.js`), PDF 저장은 `html2canvas`+`jsPDF`(`exportPdf.js`). 편집 가능한 출력은 한글(HWPX) 서식으로 만든 문서의 첨부 HWPX가 맡는다(Word 내보내기는 없앴다).
 - 첨부파일은 **작성(입력) 화면에서만** 올리고, 상세(확인) 화면은 읽기 전용이다.
 
 ### 5.5 제규정 (`regulations`)
@@ -169,7 +169,7 @@ URL 라우터가 없다. 각 앱의 `main.js`가 메뉴를 `GROUPS` 배열(그�
 - **저장 경로는 영문 UUID**(`{종류}/{id}/{timestamp}_{uuid}{확장자}`), 한글 원본 파일명은 DB `file_name`에만 저장한다. Supabase Storage가 비-ASCII 키를 거부하기 때문.
 - **다운로드**는 서명 URL로 받아 Blob으로 만든 뒤 `<a download="원본이름">`으로 저장 → 한글 파일명이 그대로 유지된다.
 - **PDF 미리보기**는 위젯을 그릴 때 서명 URL(1시간)을 미리 받아 평범한 `<a target="_blank">`로 연다(스크립트로 새 탭을 여는 방식은 팝업 차단에 걸려서 폐기).
-- 사진(JPG/PNG/WebP)은 업로드 전에 1920px·JPEG 82%로 줄인다. PDF·Word·HWPX는 그대로.
+- 사진(JPG/PNG/WebP)은 업로드 전에 1920px·JPEG 82%로 줄인다. PDF·HWPX는 그대로.
 - 위젯은 `allowUpload`/`allowDelete` 옵션으로 입력 화면과 열람 화면을 구분한다.
 
 ## 8. 인증과 보안

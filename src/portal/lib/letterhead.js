@@ -1,4 +1,4 @@
-// 사용자가 제공한 기존 공문서 양식(PDF)을 코드로 옮긴 것 — 인쇄/화면 미리보기와 Word 내보내기가
+// 사용자가 제공한 기존 공문서 양식(PDF)을 코드로 옮긴 것 — 화면 미리보기와 PDF 내보내기가
 // 이 상수·문구를 공유해서 두 출력물의 문구가 어긋나지 않게 한다.
 export const COMPANY = {
   slogan: '"시간을 이기는 투자, 나눔으로 완성되는 성장"',
@@ -11,7 +11,7 @@ export const COMPANY = {
 };
 
 // 문서 본문은 공문서 느낌의 바탕체, 슬로건·회사명 같은 표제부는 힘 있는 고딕(견고딕 느낌)으로
-// 대비를 준다 — letterheadPrint.js·expenseResolution.js·exportDocx.js가 화면·PDF·Word 세
+// 대비를 준다 — letterheadPrint.js·expenseResolution.js가 화면·PDF 두
 // 출력물에서 같은 폰트 조합을 쓰도록 여기 한 곳에만 정의한다.
 // 경기천년바탕을 웹폰트(style.css @font-face)로 우선 적용한다 — 함초롬바탕은 한컴 번들
 // 폰트라 뷰어 PC에 한글이 안 깔려 있으면 안 보이는데, 경기천년바탕은 경기도청이 상업적

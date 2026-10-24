@@ -2,7 +2,7 @@
 // 코드로 시험할 수 있다(Vite 전용 import는 hwpx.js 쪽에만 둔다).
 
 export const TITLE_FONT = '경기천년제목 Medium';
-// 한글·Word 글꼴 목록의 이름은 굵기까지 붙은 형태다(제목 "경기천년제목 Medium", 본문 "경기천년바탕 Regular").
+// 한글 글꼴 목록의 이름은 굵기까지 붙은 형태다(제목 "경기천년제목 Medium", 본문 "경기천년바탕 Regular").
 // 이름이 한 글자라도 다르면 한글이 못 찾고 기본 바탕체로 바꿔 보여준다.
 export const BODY_FONT = '경기천년바탕 Regular';
 

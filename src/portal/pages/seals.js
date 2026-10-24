@@ -29,7 +29,7 @@ export async function renderSeals(container) {
   container.innerHTML = `
   <div class="card">
     <h2>직인 관리</h2>
-    <p class="note" style="margin:0 0 10px">직인 이미지(PNG/JPG)를 올리면 흰 배경은 자동으로 투명 처리됩니다. 승인된 시행문 상세화면의 [직인 날인]에서 사용 중인 직인이 문서의 "(인)" 자리에 찍히고, PDF·Word에도 반영되며 날인기록부에 남습니다.</p>
+    <p class="note" style="margin:0 0 10px">직인 이미지(PNG/JPG)를 올리면 흰 배경은 자동으로 투명 처리됩니다. 승인된 시행문 상세화면의 [직인 날인]에서 사용 중인 직인이 문서의 "(인)" 자리에 찍히고, PDF에도 반영되며 날인기록부에 남습니다.</p>
     <div class="toolbar">
       <input id="sealName" type="text" placeholder="직인 이름 (예: 대표이사 직인)" style="min-width:220px">
       <input id="sealFile" type="file" accept="image/*">

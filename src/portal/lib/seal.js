@@ -40,22 +40,21 @@ export async function fetchActiveSeal() {
   return data ?? null;
 }
 
-// 화면(PDF 캡처)과 Word 양쪽에서 같은 바이트를 써야 해서, 서명 URL을 한 번 받아 data URL과
-// 바이트 배열로 함께 돌려준다. data URL이면 html2canvas가 CORS 걱정 없이 그릴 수 있다.
+// 화면·PDF 캡처에서 쓰도록 서명 URL로 받은 이미지를 data URL로 바꿔 돌려준다(data URL이면
+// html2canvas가 CORS 걱정 없이 그릴 수 있다).
 export async function loadSealImage(seal) {
   const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(seal.storage_path, 3600);
   if (error) throw error;
   const res = await fetch(data.signedUrl);
   if (!res.ok) throw new Error(`직인 이미지를 불러오지 못했습니다 (${res.status})`);
   const blob = await res.blob();
-  const bytes = new Uint8Array(await blob.arrayBuffer());
   const dataUrl = await new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result);
     reader.onerror = reject;
     reader.readAsDataURL(blob);
   });
-  return { dataUrl, bytes };
+  return { dataUrl };
 }
 
 export async function uploadSeal(name, file, email) {
