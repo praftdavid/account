@@ -11,6 +11,7 @@ import { fetchExpenseAccounts, accountLabel as expenseAccountLabel } from '../li
 import { retentionDeadline } from '../lib/retention.js';
 import { logDocEvent, listDocEvents, EVENT_LABEL } from '../lib/docEvents.js';
 import { fetchTemplates } from '../lib/docTemplates.js';
+import { templatePlaceholders, buildHwpxFromTemplate } from '../lib/hwpx.js';
 import { fetchSeal, fetchActiveSeal, loadSealImage, sealDocument } from '../lib/seal.js';
 
 const EXPENSE_TYPE = '지급회의서';
@@ -178,7 +179,8 @@ async function renderForm(container) {
         doc
           ? ''
           : `<div style="grid-column:span 12"><label>서식 불러오기</label>
-        <select id="f_template" style="width:100%"><option value="">(서식 선택 — 제목·수신·본문을 채워줍니다)</option>${templates.map((t) => `<option value="${t.template_id}">[${esc(t.doc_type)}] ${esc(t.name)}</option>`).join('')}</select></div>`
+        <select id="f_template" style="width:100%"><option value="">(서식 선택 — 제목·수신·본문을 채워줍니다)</option>${templates.map((t) => `<option value="${t.template_id}">[${esc(t.doc_type)}] ${esc(t.name)}${t.hwpx_path ? ' · 한글' : ''}</option>`).join('')}</select></div>
+      <div id="hwpxBlock" style="grid-column:span 12" hidden></div>`
       }
       <div style="grid-column:span 4"><label>문서종류 *</label><select id="f_type">${typeOptions}</select></div>
       <div style="grid-column:span 4"><label>기안부서 *</label><select id="f_dept">${deptOptions}</select></div>
@@ -229,19 +231,51 @@ async function renderForm(container) {
   typeSel.onchange = syncFieldVisibility;
   syncFieldVisibility();
 
+  // 한글(HWPX) 서식을 고르면 템플릿의 {{자리표시}}마다 입력칸을 만들고, 저장할 때 그 값으로 채운
+  // HWPX를 만들어 첨부로 붙인다. pendingHwpx는 문서만 저장되고 첨부가 실패했을 때 재시도용으로 남긴다.
+  let hwpxTemplate = null;
+  let pendingHwpx = null;
+  const bodyInput = document.getElementById('f_body');
+  const hwpxBlock = document.getElementById('hwpxBlock');
   const templateSel = document.getElementById('f_template');
   if (templateSel) {
-    templateSel.onchange = () => {
+    templateSel.onchange = async () => {
       const t = templates.find((x) => x.template_id === Number(templateSel.value));
+      hwpxTemplate = null;
+      pendingHwpx = null;
+      hwpxBlock.hidden = true;
+      hwpxBlock.innerHTML = '';
+      bodyInput.required = true;
       if (!t) return;
-      const bodyEl = document.getElementById('f_body');
-      if (bodyEl.value.trim() && !confirm('작성 중인 내용이 서식 내용으로 바뀝니다. 계속할까요?')) { templateSel.value = ''; return; }
+      if (bodyInput.value.trim() && !confirm('작성 중인 내용이 서식 내용으로 바뀝니다. 계속할까요?')) { templateSel.value = ''; return; }
       typeSel.value = t.doc_type;
       syncFieldVisibility();
       document.getElementById('f_title').value = t.title ?? '';
       document.getElementById('f_recipient').value = t.recipient ?? '';
       document.getElementById('f_issuer').value = t.issuer_name ?? '';
-      bodyEl.value = t.body ?? '';
+      bodyInput.value = t.body ?? '';
+      if (!t.hwpx_path) return;
+
+      hwpxBlock.hidden = false;
+      hwpxBlock.innerHTML = '<p class="note">한글 서식을 불러오는 중…</p>';
+      try {
+        const { data: signed, error: signErr } = await supabase.storage.from('portal-files').createSignedUrl(t.hwpx_path, 3600);
+        if (signErr) throw signErr;
+        const res = await fetch(signed.signedUrl);
+        if (!res.ok) throw new Error(`서식 파일을 불러오지 못했습니다 (${res.status})`);
+        const bytes = await res.arrayBuffer();
+        const keys = await templatePlaceholders(bytes);
+        hwpxTemplate = { bytes, keys };
+        bodyInput.required = false;
+        hwpxBlock.innerHTML = keys.length
+          ? `<label>한글 문서 입력칸 <span class="note">— 입력한 값으로 채운 HWPX가 첨부로 만들어집니다(한 줄씩 입력, 본문은 문서 글자로 자동 채워짐)</span></label>
+             <div class="grid" style="grid-template-columns:1fr 1fr;margin:6px 0 0">${keys
+               .map((k) => `<div><label>${esc(k)} *</label><input type="text" data-ph="${esc(k)}"></div>`)
+               .join('')}</div>`
+          : '<p class="note">이 서식에는 {{자리표시}}가 없어 문서가 그대로 첨부됩니다.</p>';
+      } catch (err) {
+        hwpxBlock.innerHTML = `<p class="err">한글 서식을 열지 못했습니다: ${esc(err.message ?? String(err))}</p>`;
+      }
     };
   }
 
@@ -289,12 +323,33 @@ async function renderForm(container) {
       return;
     }
 
+    if (hwpxTemplate && !doc && !pendingHwpx) {
+      const values = {};
+      container.querySelectorAll('[data-ph]').forEach((input) => { values[input.dataset.ph] = input.value; });
+      const emptyKey = Object.keys(values).find((k) => !values[k].trim());
+      if (emptyKey) { errEl.textContent = `한글 문서 입력칸 "${emptyKey}"을(를) 입력해 주세요.`; return; }
+      errEl.textContent = '한글 문서를 만드는 중…';
+      try {
+        const built = await buildHwpxFromTemplate(hwpxTemplate.bytes, values);
+        if (built.loss.length && !confirm(`한글 문서를 만드는 중 일부 내용(${built.loss.length}건)이 빠질 수 있습니다. 그래도 저장할까요?`)) {
+          errEl.textContent = '';
+          return;
+        }
+        const safe = (document.getElementById('f_title').value.trim() || '문서').replace(/[\\/:*?"<>|]/g, '_').slice(0, 80);
+        pendingHwpx = { file: new File([built.bytes], `${safe}.hwpx`, { type: 'application/octet-stream' }), text: built.text };
+      } catch (err) {
+        errEl.textContent = '한글 문서 생성 실패: ' + (err.message ?? err);
+        return;
+      }
+      errEl.textContent = '';
+    }
+
     const payload = {
       doc_type: docType,
       dept_id: Number(document.getElementById('f_dept').value) || null,
       title: document.getElementById('f_title').value.trim(),
       disclosure: document.getElementById('f_disclosure').value,
-      body: document.getElementById('f_body').value,
+      body: document.getElementById('f_body').value || pendingHwpx?.text || '',
       // 기안문/시행문 필드와 지급회의서 필드는 서로 배타적 — 문서종류를 바꾸면 안 쓰는 쪽은 비운다.
       recipient: isExpense ? null : document.getElementById('f_recipient').value.trim() || null,
       issuer_name: isExpense ? null : issuerName,
@@ -319,12 +374,13 @@ async function renderForm(container) {
       doc = data; // 첨부파일 업로드 실패로 폼에 머무른 채 재제출해도 중복 생성되지 않도록 갱신
     }
 
-    const files = [...document.getElementById('f_attachments').files];
+    const files = [...(pendingHwpx ? [pendingHwpx.file] : []), ...document.getElementById('f_attachments').files];
     if (files.length > 0) {
       errEl.textContent = `첨부파일 업로드 중… (0/${files.length})`;
       for (const [i, file] of files.entries()) {
         try {
           await uploadAttachment('document', currentDocId, file, email);
+          if (pendingHwpx && file === pendingHwpx.file) pendingHwpx = null;
           errEl.textContent = `첨부파일 업로드 중… (${i + 1}/${files.length})`;
         } catch (err) {
           errEl.textContent = `"${file.name}" 첨부 실패: ${err.message} (본문은 저장되었습니다)`;

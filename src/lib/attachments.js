@@ -95,6 +95,10 @@ export function isPdfAttachment(attachment) {
   return /\.pdf$/i.test(attachment.file_name);
 }
 
+export function isHwpAttachment(attachment) {
+  return /\.hwpx?$/i.test(attachment.file_name);
+}
+
 export async function getSignedUrl(attachment) {
   const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(attachment.storage_path, 3600);
   if (error) throw error;
@@ -137,7 +141,9 @@ export async function renderAttachmentsWidget(container, targetType, targetId, u
             <td>${
               isPdfAttachment(a) && pdfUrls[a.attachment_id]
                 ? `<a href="${esc(pdfUrls[a.attachment_id])}" target="_blank" rel="noopener">${esc(a.file_name)}</a> <span class="note">(미리보기)</span>`
-                : `<a href="#" data-dl="${a.attachment_id}">${esc(a.file_name)}</a>`
+                : `<a href="#" data-dl="${a.attachment_id}">${esc(a.file_name)}</a>${
+                    isHwpAttachment(a) ? ` <a href="#" class="note" data-hwp="${a.attachment_id}">(한글 미리보기)</a>` : ''
+                  }`
             }</td>
             <td class="c">${fmtSize(a.file_size)}</td>
             <td class="c">${esc(a.uploaded_by ?? '')}</td>
@@ -163,6 +169,23 @@ export async function renderAttachmentsWidget(container, targetType, targetId, u
     a.onclick = (ev) => {
       ev.preventDefault();
       downloadAttachment(byId(a.dataset.dl)).catch((err) => alert('다운로드 실패: ' + err.message));
+    };
+  });
+
+  // 한글 파일 뷰어(WASM 약 11.8MB)는 이 링크를 눌렀을 때만 내려받는다.
+  container.querySelectorAll('[data-hwp]').forEach((a) => {
+    a.onclick = async (ev) => {
+      ev.preventDefault();
+      const attachment = byId(a.dataset.hwp);
+      try {
+        const res = await fetch(await getSignedUrl(attachment));
+        if (!res.ok) throw new Error(`파일을 불러오지 못했습니다 (${res.status})`);
+        const bytes = await res.arrayBuffer();
+        const { openHwpxViewer } = await import('../portal/lib/hwpxViewer.js');
+        await openHwpxViewer(bytes, attachment.file_name);
+      } catch (err) {
+        alert('미리보기 실패: ' + err.message);
+      }
     };
   });
 

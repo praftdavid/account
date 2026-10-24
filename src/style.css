@@ -52,6 +52,14 @@
   font-weight:800;
   font-display:swap;
 }
+/* HWPX 문서는 글꼴 이름을 한글에 설치된 이름("경기천년제목 Medium")으로 갖고 있어서, 캔버스로
+   그릴 때 같은 이름의 웹폰트가 있어야 한다. 굵기 범위를 열어 어떤 굵기 요청이든 이 파일로 받는다. */
+@font-face{
+  font-family:'경기천년제목 Medium';
+  src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/2410-3@1.0/Title_Medium.woff') format('woff');
+  font-weight:100 900;
+  font-display:swap;
+}
 *{box-sizing:border-box;margin:0;padding:0;}
 body{word-break:keep-all;overflow-wrap:break-word;font-family:'Pretendard','Apple SD Gothic Neo','Malgun Gothic',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased;}
 header{background:var(--surface);color:var(--text);padding:14px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;border-bottom:1px solid var(--bd);}
@@ -182,3 +190,10 @@ select.acct{min-width:180px;}
   .cal-daynum{font-size:11px;}
   .cal-day{padding:2px;gap:2px;height:44px;}
 }
+
+/* HWP/HWPX 첨부 미리보기 */
+.hwp-viewer{position:fixed;inset:0;z-index:1000;background:rgba(25,31,40,.72);display:flex;flex-direction:column;}
+.hwp-viewer-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 16px;background:var(--surface);border-bottom:1px solid var(--bd);}
+.hwp-viewer-title{flex:1;min-width:120px;font-size:14px;overflow-wrap:anywhere;}
+.hwp-viewer-body{flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;align-items:center;gap:12px;}
+.hwp-page{display:block;width:min(100%,794px);height:auto;background:#fff;box-shadow:var(--shadow-md);}

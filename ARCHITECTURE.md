@@ -111,6 +111,8 @@ URL 라우터가 없다. 각 앱의 `main.js`가 메뉴를 `GROUPS` 배열(그�
   - 상신 후 승인 전 **회수 = 문서 삭제**(첨부 포함). 승인 후 **회수 = 상태만 `recalled`로 변경**하고 사유·회수자·시각을 보존(삭제하지 않음).
 - **결재 이력** (`document_events`): 기안·상신·재상신·승인·반려·회수·날인을 한 줄씩 기록. 문서 행에는 마지막 결정만 남기 때문에 이력은 별도 테이블이다.
 - **서식** (`doc_templates`): 기안 작성 화면의 [서식 불러오기]/[서식으로 저장], 기초정보 > 서식관리.
+- **한글(HWPX) 서식**: 서식에 `.hwp/.hwpx` 파일을 올리면(HWP는 HWPX로 변환해 보관, `doc_templates.hwpx_path`) 문서 안의 `{{자리표시}}`마다 기안 화면에 입력칸이 생기고, 저장하면 값으로 채운 HWPX가 문서 첨부로 붙는다. 한 줄 값만 지원하며, 글꼴은 HWPX 글꼴 정의를 제목 `경기천년제목 Medium` · 본문 `경기천년바탕`으로 바꿔 쓴다. 엔진은 `@rhwp/core`(WASM 약 11.8MB, 한글 기능을 쓸 때만 로드). 로직은 `portal/lib/hwpxCore.js`(순수 함수), 로더·캔버스 렌더·PDF는 `hwpx.js`, 미리보기 창은 `hwpxViewer.js`.
+- **HWP/HWPX 첨부 미리보기·PDF**: 첨부 목록의 "(한글 미리보기)"가 쪽별로 캔버스에 그리고 [PDF 저장]으로 이미지 PDF를 만든다. 캔버스 렌더러를 써야 페이지에 로드된 경기천년 웹폰트가 적용된다(SVG를 이미지로 쓰면 웹폰트가 빠진다).
 - **직인 날인** (`seals`, `seal_logs`): 직인 이미지를 올리면 흰 배경을 투명 처리해 PNG로 저장. 사용 지정한 직인 1개가 승인된 시행문의 "(인)" 자리에 찍히고 PDF·Word에 반영된다. 날인은 취소할 수 없고 `seal_logs`(날인기록부)에 한 줄 남는다. 이미 날인에 쓴 직인은 삭제 불가.
 - **출력**: 화면 미리보기는 공문서 서식(`letterheadPrint.js`·`expenseResolution.js`), PDF 저장은 `html2canvas`+`jsPDF`(`exportPdf.js`), Word는 `docx`(`exportDocx.js`).
 - 첨부파일은 **작성(입력) 화면에서만** 올리고, 상세(확인) 화면은 읽기 전용이다.
@@ -190,7 +192,7 @@ npm run preview   # 빌드 결과를 정적 서버로 확인
 
 ## 10. 알려진 한계·정리할 것
 
-1. **최신 DB 변경이 `db/`에 없다.** `db/`는 `20_expense_date.sql`까지만 있고, 이후 추가한 `trade_logs`, `schedules`, `doc_templates`, `seals`, `seal_logs`, `document_events`, `documents.seal_*`, `documents.status`의 `recalled` 값은 DB에 직접 적용했다. 새 환경을 재구성하려면 이 변경을 SQL 파일로 정리해 두어야 한다.
+1. **DB 변경은 `db/21_portal_extensions.sql`에 정리했다**(`trade_logs`, `schedules`, `doc_templates`, `seals`, `seal_logs`, `document_events`, 직인 컬럼, `recalled` 상태, `doc_templates.hwpx_path`). 모두 멱등이라 다시 실행해도 안전하다. 이 파일을 만들기 전에 직접 적용한 것과 내용이 같은지는 새 환경에서 실행해 대조해 보지 않았다.
 2. **CHANGELOG가 `v1.0.2`에서 멈춰 있다.** 커밋 메시지에는 v1.1.x~v1.2.0이 있으나 `package.json`·`CHANGELOG.md`는 갱신되지 않았다.
 3. 상신 전 회수는 문서를 삭제하므로 **문서번호가 결번이 되고** 그 문서의 결재 이력도 함께 사라진다.
 4. 문서포털의 첨부파일·직인 이미지는 Supabase Storage에만 있다. 별도 백업 절차는 없다.
