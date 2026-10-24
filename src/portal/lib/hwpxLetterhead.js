@@ -15,6 +15,12 @@ function spec(text, o = {}) {
   return { text, align: 'left', size: 11 * PT, before: 0, after: 0, line: 160, ...o };
 }
 
+// 구분선은 문단 테두리가 아니라 "선만 있는 아주 작은 빈 문단"으로 만든다. 글이 있는 문단의 테두리는
+// 한글이 간격·여백을 포함한 문단 상자 기준으로 그려서 다음 줄 글자를 가로지르는 일이 생겼다.
+function rule(kind, after) {
+  return spec(' ', { size: 2 * PT, line: 100, after, border: kind });
+}
+
 // 문서 내용을 문단 목록으로 푼다. 빈 줄도 문단이다(본문의 빈 줄 유지).
 export function letterheadParagraphs(doc, deptName) {
   const recipient = doc.recipient?.trim() || (doc.doc_type === '시행문' ? '' : '내부결재');
@@ -24,7 +30,8 @@ export function letterheadParagraphs(doc, deptName) {
     spec(COMPANY.name, { align: 'center', size: 20 * PT, after: 14 * SP }),
     spec(`수신 : ${recipient}`, { after: 4 * SP }),
     // 굵은 줄: 제목 문단의 아래 테두리
-    spec(`제목 : ${doc.title}`, { after: 16 * SP, border: 'bottom-heavy' }),
+    spec(`제목 : ${doc.title}`, { after: 3 * SP }),
+    rule('rule-heavy', 14 * SP),
     ...String(doc.body ?? '').split('\n').map((line) => spec(line.replace(/\r$/, ''), { line: 200 })),
   ];
   if (issuer) list.push(spec(`${COMPANY.name}  ${issuer}`, { align: 'right', before: 22 * SP, after: 8 * SP, issuerLine: true }));
@@ -36,7 +43,8 @@ export function letterheadParagraphs(doc, deptName) {
 // 고정되어야 한다(본문 흐름에 두면 짧은 문서에서 박스가 쪽 중간에 뜬다).
 export function letterheadFooter(doc, deptName) {
   return [
-    spec(`시행 : ${implementationNo(doc, deptName)}`, { size: 9 * PT, border: 'top-thin', after: 2 * SP }),
+    rule('rule-thin', 3 * SP),
+    spec(`시행 : ${implementationNo(doc, deptName)}`, { size: 9 * PT, after: 2 * SP }),
     spec(`우 ${COMPANY.zip}  ${COMPANY.address} / 전화 ${COMPANY.phone} / FAX ${COMPANY.fax}`, { size: 8 * PT, after: SP }),
     spec(`(E-mail : ${COMPANY.email}) / 공개구분 : ${doc.disclosure ?? '공개'}`, { size: 8 * PT }),
   ];
@@ -48,8 +56,8 @@ const NONE = { type: 0, width: 0, color: '#000000' };
 // borderSpacing = [왼, 오른, 위, 아래] 선과 글자 사이 여백. 0이면 선이 글자에 붙어 겹쳐 보인다.
 const border = (side, line, spacing) => ({ borderLeft: NONE, borderRight: NONE, borderTop: NONE, borderBottom: NONE, [`border${side}`]: line, borderSpacing: spacing });
 const BORDERS = {
-  'bottom-heavy': border('Bottom', { type: 1, width: 7, color: '#000000' }, [0, 0, 0, 600]),
-  'top-thin': border('Top', { type: 1, width: 1, color: '#000000' }, [0, 0, 600, 0]),
+  'rule-heavy': border('Bottom', { type: 1, width: 7, color: '#000000' }, [0, 0, 0, 0]),
+  'rule-thin': border('Bottom', { type: 1, width: 1, color: '#000000' }, [0, 0, 0, 0]),
 };
 
 // rhwp가 넣는 그림은 용지 왼쪽 위 기준의 떠 있는 그림(treatAsChar=0, PAPER 기준)이라 문서 맨 위
