@@ -9,6 +9,14 @@ import { navigate } from '../nav.js';
 
 const WEEKDAY = ['일', '월', '화', '수', '목', '금', '토'];
 
+// 빠른 실행 버튼의 선 아이콘(색은 글자색을 따라간다).
+const svg = (d) => `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const ICON = {
+  doc: svg('<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 12v5M9.5 14.5h5"/>'),
+  trade: svg('<path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 15l3-4 3 2 5-6"/>'),
+  sched: svg('<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/><path d="M9 14.5l2 2 4-4"/>'),
+};
+
 function dateStr(ts) {
   return ts ? String(ts).slice(0, 10) : '';
 }
@@ -125,9 +133,9 @@ export async function renderDashboard(container) {
     </div>
 
     <div class="home-quick">
-      <button class="btn ghost" id="quickDoc">문서 작성</button>
-      <button class="btn ghost" id="quickTrade">매매 기록</button>
-      <button class="btn ghost" id="quickSched">일정 등록</button>
+      <button class="home-quick-btn" id="quickDoc">${ICON.doc}<span>문서 작성</span></button>
+      <button class="home-quick-btn" id="quickTrade">${ICON.trade}<span>매매 기록</span></button>
+      <button class="home-quick-btn" id="quickSched">${ICON.sched}<span>일정 등록</span></button>
     </div>
 
     <div class="card">

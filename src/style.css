@@ -237,3 +237,40 @@ select.acct{min-width:180px;}
 .acct-sec{padding:8px 10px 2px;font-size:11px;color:var(--text-mute);}
 .acct-sec:empty{border-top:1px solid var(--bd);margin:6px 0 2px;padding:0;}
 @media(max-width:600px){header .sub .app-switch{display:none;}}
+
+/* ── 문서포털 디자인 다듬기(body.portal 안에서만 적용 — 관리회계 앱은 그대로) ── */
+.portal header{padding:12px 18px;border-bottom:none;}
+.portal header h1{display:flex;align-items:center;gap:9px;}
+.portal header h1::before{content:'P';display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:9px;background:var(--brand);color:#fff;font-size:15px;font-weight:800;}
+.portal nav{position:sticky;top:0;z-index:20;border-bottom:1px solid var(--bd);}
+.portal nav .nav-groups{background:var(--surface);border-bottom:none;padding:6px 12px 4px;gap:4px;}
+.portal nav .nav-groups button{border-radius:999px;border-bottom:none;padding:8px 16px;color:var(--text-sub);font-weight:600;}
+.portal nav .nav-groups button:hover{background:var(--bg);color:var(--text);}
+.portal nav .nav-groups button.on{background:var(--brand-light);color:var(--brand);}
+.portal nav .nav-items{border-bottom:none;padding:2px 12px 8px;gap:4px;}
+.portal nav .nav-items button{border-radius:8px;border-bottom:none;padding:6px 12px;font-size:13px;color:var(--text-mute);}
+.portal nav .nav-items button:hover{background:var(--bg);}
+.portal nav .nav-items button.on{background:var(--bg);color:var(--text);font-weight:700;}
+.portal .card{border:none;border-radius:18px;padding:20px 22px;box-shadow:0 1px 2px rgba(25,31,40,.04),0 8px 22px rgba(25,31,40,.05);}
+.portal .kpi{border:none;border-radius:18px;}
+.portal :focus-visible{outline:2px solid var(--brand);outline-offset:2px;}
+.portal .home-hello h2{font-size:24px;letter-spacing:-.5px;}
+.portal .home-quick{gap:10px;}
+.portal .home-quick-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px 6px 14px;background:var(--surface);border:none;border-radius:18px;box-shadow:0 1px 2px rgba(25,31,40,.04),0 8px 22px rgba(25,31,40,.05);color:var(--brand);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;transition:transform .12s ease,background .12s ease;}
+.portal .home-quick-btn span{color:var(--text);}
+.portal .home-quick-btn:hover{background:var(--brand-light);}
+.portal .home-quick-btn:active{transform:scale(.97);}
+.portal .home-row{border-radius:12px;padding:12px 10px;margin:0 -10px;width:calc(100% + 20px);}
+.portal .home-row-main b{font-weight:700;}
+.portal .home-switch{background:var(--surface);border-radius:14px;margin-top:4px;box-shadow:0 1px 2px rgba(25,31,40,.04);}
+@media(max-width:600px){
+  .portal main{padding:12px 12px 32px;}
+  .portal .card{padding:16px;margin-bottom:12px;border-radius:16px;}
+  .portal header{padding:10px 14px;}
+  .portal nav .nav-groups{padding:6px 8px 2px;gap:2px;}
+  .portal nav .nav-groups button{padding:9px 2px;}
+  .portal nav .nav-items{padding:2px 8px 8px;}
+  .portal .home-hello h2{font-size:22px;}
+}
+.portal td a,.portal .card p a{color:var(--brand);text-decoration:none;font-weight:600;}
+.portal td a:hover,.portal .card p a:hover{text-decoration:underline;}
