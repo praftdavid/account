@@ -37,12 +37,12 @@ ${issuerLine ? `<p style="margin-top:30px;font-size:14px">수신자 : ${esc(reci
 </div>
 <div style="margin-top:auto">
 <hr style="border:none;border-top:1px solid #000;margin:24px 0 6px">
-<table style="width:100%;font-size:12px">
+<table style="width:100%;font-size:13px">
   <tr>
     <td>시행 : ${esc(implementationNo(doc, deptName))}</td>
   </tr>
 </table>
-<p style="font-size:11px;margin-top:4px;line-height:1.6">
+<p style="font-size:13px;margin-top:4px;line-height:1.6">
   우 ${esc(COMPANY.zip)}&nbsp;&nbsp;${esc(COMPANY.address)} / 전화 ${esc(COMPANY.phone)} / FAX ${esc(COMPANY.fax)}<br>
   (E-mail : ${esc(COMPANY.email)}) / 공개구분 : ${esc(doc.disclosure ?? '공개')}
 </p>

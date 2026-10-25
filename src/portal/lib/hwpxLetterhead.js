@@ -50,8 +50,8 @@ export function letterheadParagraphs(doc, deptName, sealed = false) {
 export function letterheadFooter(doc, deptName) {
   return [
     { ...spec(`시행 : ${implementationNo(doc, deptName)}`, { size: 10 * PT, line: 140 }), top: THIN, pad: 350, h: 1848 },
-    { ...spec(`우 ${COMPANY.zip}  ${COMPANY.address} / 전화 ${COMPANY.phone} / FAX ${COMPANY.fax}`, { size: 9 * PT, line: 140 }), pad: 150, h: 1748 },
-    { ...spec(`(E-mail : ${COMPANY.email}) / 공개구분 : ${doc.disclosure ?? '공개'}`, { size: 9 * PT, line: 140 }), pad: 350, h: 1748 },
+    { ...spec(`우 ${COMPANY.zip}  ${COMPANY.address} / 전화 ${COMPANY.phone} / FAX ${COMPANY.fax}`, { size: 10 * PT, line: 140 }), pad: 150, h: 1748 },
+    { ...spec(`(E-mail : ${COMPANY.email}) / 공개구분 : ${doc.disclosure ?? '공개'}`, { size: 10 * PT, line: 140 }), pad: 350, h: 1748 },
   ];
 }
 
