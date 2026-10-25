@@ -18,7 +18,7 @@ import { setRenderer, getCurrentView, setCurrentView } from './nav.js';
 // 페이지 내부 전환은 이 리셋을 거치지 않고 각자 알아서 처리한다.
 const VIEW_RESET = { schedules: resetSchedules, trades: resetTradeLog, docs: resetDocuments, regs: resetRegulations, projects: resetProjects, archive: resetProjectArchive, templates: resetDocTemplates };
 
-// 메뉴는 큰 메뉴 4개 + 설정으로 줄이고, 비슷한 화면은 둘째 줄의 탭으로 묶는다(모바일에서 한 줄에 다 보이게).
+// 메뉴는 큰 메뉴 4개로 줄이고(설정은 계정 메뉴 안), 비슷한 화면은 둘째 줄의 탭으로 묶는다(모바일에서 한 줄에 다 보이게).
 //  · 홈: 지금 처리할 일·일정 요약
 //  · 업무·일정: 진행 중 프로젝트 / 완료 프로젝트(예전 부서자료) / 일정(달력)
 //  · 매매일지
@@ -59,6 +59,8 @@ const GROUPS = [
 const navEl = document.getElementById('nav');
 const mainEl = document.getElementById('main');
 const userbarEl = document.getElementById('userbar');
+// 메뉴 바깥을 누르면 계정 메뉴를 닫는다(한 번만 등록).
+document.addEventListener('click', () => { const pop = document.getElementById('acctPop'); if (pop) pop.hidden = true; });
 const homeLinkEl = document.getElementById('homeLink');
 if (homeLinkEl) homeLinkEl.onclick = () => go('dashboard');
 
@@ -82,14 +84,30 @@ async function render() {
     return;
   }
 
-  userbarEl.innerHTML = `<span>${esc(session.user.email)}</span><button class="btn ghost sm" id="logoutBtn">로그아웃</button>`;
+  // 계정 메뉴: 이메일·설정(부서/서식/직인/날인기록부)·관리회계 이동·로그아웃을 한곳에 모아 상단을 단순하게 한다.
+  const settingsItems = GROUPS.find((g) => g[0] === 'settings')[2];
+  userbarEl.innerHTML = `<div class="acct">
+    <button class="acct-btn" id="acctBtn" aria-label="계정 메뉴">${esc((session.user.email ?? '?')[0].toUpperCase())}</button>
+    <div class="acct-pop" id="acctPop" hidden>
+      <div class="acct-mail">${esc(session.user.email)}</div>
+      <div class="acct-sec">설정</div>
+      ${settingsItems.map(([k, label]) => `<button data-acct-go="${k}">${label}</button>`).join('')}
+      <div class="acct-sec"></div>
+      <a href="/portal.html">관리회계 시스템 →</a>
+      <button id="logoutBtn">로그아웃</button>
+    </div>
+  </div>`;
+  const acctPop = document.getElementById('acctPop');
+  document.getElementById('acctBtn').onclick = (ev) => { ev.stopPropagation(); acctPop.hidden = !acctPop.hidden; };
+  acctPop.onclick = (ev) => ev.stopPropagation();
+  userbarEl.querySelectorAll('[data-acct-go]').forEach((b) => (b.onclick = () => go(b.dataset.acctGo)));
   document.getElementById('logoutBtn').onclick = () => supabase.auth.signOut();
 
   const cur = getCurrentView();
   const curGroup = groupOf(cur) ?? GROUPS[0];
 
   navEl.innerHTML = `
-    <div class="nav-row nav-groups compact">${GROUPS.map(([k, label]) => `<button class="${k === curGroup[0] ? 'on' : ''}" data-group="${k}">${label}</button>`).join('')}</div>
+    <div class="nav-row nav-groups compact">${GROUPS.filter(([k]) => k !== 'settings').map(([k, label]) => `<button class="${k === curGroup[0] ? 'on' : ''}" data-group="${k}">${label}</button>`).join('')}</div>
     ${curGroup[2].length > 1 ? `<div class="nav-row nav-items compact">${curGroup[2].map(([k, label]) => `<button class="${k === cur ? 'on' : ''}" data-view="${k}">${label}</button>`).join('')}</div>` : ''}`;
 
   navEl.querySelectorAll('[data-group]').forEach((b) => {

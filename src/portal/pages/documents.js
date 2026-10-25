@@ -28,6 +28,17 @@ export function resetView() {
   currentDocId = null;
 }
 
+// 홈에서 "결재 대기 문서"를 누르면 문서함 목록이 아니라 그 문서 상세가, "문서 작성"을 누르면 작성 화면이 바로 열리게 한다.
+export function openDocument(docId) {
+  mode = 'view';
+  currentDocId = docId;
+}
+
+export function openNewDocument() {
+  mode = 'new';
+  currentDocId = null;
+}
+
 async function currentUserEmail() {
   const { data } = await supabase.auth.getUser();
   return data?.user?.email ?? null;

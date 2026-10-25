@@ -23,6 +23,17 @@ export function resetView() {
   currentTradeId = null;
 }
 
+// 홈의 "복기 작성"·"매매 기록" 바로가기용.
+export function openTrade(tradeId) {
+  mode = 'view';
+  currentTradeId = tradeId;
+}
+
+export function openNewTrade() {
+  mode = 'new';
+  currentTradeId = null;
+}
+
 async function currentUserEmail() {
   const { data } = await supabase.auth.getUser();
   return data?.user?.email ?? null;

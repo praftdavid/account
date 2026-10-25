@@ -14,6 +14,12 @@ let calendarYear = todayDate.getFullYear();
 let calendarMonth = todayDate.getMonth() + 1; // 1~12
 let selectedDay = null; // 'YYYY-MM-DD' | null
 
+// 홈의 "일정 등록" 바로가기용.
+export function openNewSchedule() {
+  mode = 'new';
+  currentScheduleId = null;
+}
+
 export function resetView() {
   mode = 'list';
   currentScheduleId = null;
