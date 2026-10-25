@@ -236,7 +236,7 @@ select.acct{min-width:180px;}
 .acct-mail{padding:6px 10px 8px;font-size:12px;color:var(--text-mute);word-break:break-all;}
 .acct-sec{padding:8px 10px 2px;font-size:11px;color:var(--text-mute);}
 .acct-sec:empty{border-top:1px solid var(--bd);margin:6px 0 2px;padding:0;}
-@media(max-width:600px){header .sub .app-switch{display:none;}}
+@media(max-width:600px){.portal header .sub .app-switch{display:none;}}
 
 /* ── 문서포털 디자인 다듬기(body.portal 안에서만 적용 — 관리회계 앱은 그대로) ── */
 .portal header{padding:12px 18px;border-bottom:none;}
