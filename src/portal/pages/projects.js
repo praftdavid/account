@@ -38,7 +38,7 @@ function progressOf(tasks) {
 export async function renderProjects(container) {
   const departments = await fetchDepartments({ activeOnly: true });
   if (departments.length === 0) {
-    container.innerHTML = '<div class="card"><p class="note">등록된 부서가 없습니다. [기초정보 &gt; 부서관리]에서 먼저 부서를 추가하세요.</p></div>';
+    container.innerHTML = '<div class="card"><p class="note">등록된 부서가 없습니다. [설정 &gt; 부서관리]에서 먼저 부서를 추가하세요.</p></div>';
     return;
   }
   if (selectedDeptId == null || !departments.some((d) => d.dept_id === selectedDeptId)) {
@@ -299,7 +299,7 @@ export async function renderProjectDetailView(container, projectId, { readOnly, 
   const archiveBtn = document.getElementById('archiveBtn');
   if (archiveBtn) {
     archiveBtn.onclick = async () => {
-      if (!confirm('이 프로젝트를 완료 처리하시겠습니까? 완료 후에는 부서자료(아카이브)에서 읽기전용으로 보입니다.')) return;
+      if (!confirm('이 프로젝트를 완료 처리하시겠습니까? 완료 후에는 [업무·일정 > 완료]에서 읽기전용으로 보입니다.')) return;
       const { error: archErr } = await supabase.from('projects').update({ status: 'archived', archived_at: new Date().toISOString() }).eq('project_id', projectId);
       if (archErr) { alert('처리 실패: ' + archErr.message); return; }
       onBack();

@@ -84,6 +84,11 @@ nav .nav-groups{background:var(--bg);border-bottom:1px solid var(--bd);}
 nav .nav-groups button{padding:9px 16px;color:var(--text-sub);border-bottom:2px solid transparent;}
 nav .nav-groups button.on{background:var(--surface);border-bottom-color:var(--brand);color:var(--brand);font-weight:700;}
 nav .nav-items{border-bottom:1px solid var(--bd);}
+/* 문서포털 메뉴(큰 메뉴 4개+설정, 둘째 줄 탭)는 모바일에서도 한 줄에 꽉 차게 나눠 쓴다 */
+@media(max-width:600px){
+  nav .nav-row.compact{padding:0 4px;flex-wrap:nowrap;}
+  nav .nav-row.compact button{flex:1 1 0;min-width:0;padding:11px 2px;font-size:13px;white-space:nowrap;}
+}
 main{padding:24px 20px;max-width:1200px;margin:0 auto;}
 .card{background:var(--surface);border:1px solid var(--bd);box-shadow:var(--shadow);border-radius:var(--radius);padding:22px 24px;margin-bottom:18px;}
 .card h2{font-size:16px;font-weight:700;color:var(--text);margin-bottom:14px;letter-spacing:-.1px;line-height:1.4;}

@@ -4,7 +4,7 @@ import { fetchDepartments } from '../lib/departments.js';
 import { renderProjectDetailView } from './projects.js';
 import { PROJECT_CATEGORIES } from '../lib/projectCategories.js';
 
-// "부서자료" 탭 — 완료(아카이브) 처리된 프로젝트만 부서별로 모아 읽기전용으로 보여준다.
+// "완료" 탭 — 완료(아카이브) 처리된 프로젝트만 부서별로 모아 읽기전용으로 보여준다.
 // 진행중 프로젝트 편집은 전부 [프로젝트] 탭 쪽(projects.js)에서 하고, 여기는 조회 전용.
 let mode = 'list'; // 'list' | 'view'
 let currentProjectId = null;

@@ -92,7 +92,7 @@ export async function renderDashboard(container) {
   container.innerHTML = `
   <div class="card">
     <div class="toolbar"><h2 style="margin-bottom:0">다가오는 일정</h2><span class="note" style="margin-left:auto">세무 신고기일, 주주총회·이사회, 프로젝트 마감 등</span></div>
-    ${scheduleRows ? `<div style="overflow-x:auto"><table><tr><th>분류</th><th>제목</th><th>기한</th><th>D-day</th></tr>${scheduleRows}</table></div>` : '<p class="note">등록된 일정이 없습니다. [일정관리]에서 추가하세요.</p>'}
+    ${scheduleRows ? `<div style="overflow-x:auto"><table><tr><th>분류</th><th>제목</th><th>기한</th><th>D-day</th></tr>${scheduleRows}</table></div>` : '<p class="note">등록된 일정이 없습니다. [업무·일정 > 일정]에서 추가하세요.</p>'}
   </div>
 
   <div class="card">

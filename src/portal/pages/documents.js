@@ -564,7 +564,7 @@ async function renderDetail(container) {
   if (sealBtn) {
     sealBtn.onclick = async () => {
       const seal = await fetchActiveSeal();
-      if (!seal) { alert('사용 중인 직인이 없습니다. [기초정보 > 직인관리]에서 직인을 등록하고 사용 지정해 주세요.'); return; }
+      if (!seal) { alert('사용 중인 직인이 없습니다. [설정 > 직인관리]에서 직인을 등록하고 사용 지정해 주세요.'); return; }
       if (!confirm(`"${seal.name}" 직인을 날인합니다. 날인 후에는 취소할 수 없고 날인기록부에 남습니다. 진행할까요?`)) return;
       sealBtn.disabled = true;
       try {

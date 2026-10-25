@@ -18,20 +18,35 @@ import { setRenderer, getCurrentView, setCurrentView } from './nav.js';
 // 페이지 내부 전환은 이 리셋을 거치지 않고 각자 알아서 처리한다.
 const VIEW_RESET = { schedules: resetSchedules, trades: resetTradeLog, docs: resetDocuments, regs: resetRegulations, projects: resetProjects, archive: resetProjectArchive, templates: resetDocTemplates };
 
-// 메뉴 배치 원칙 — 실제로 자주 쓰는 순서대로: 대시보드 → 일정관리(신고·총회 등 기한 관리) →
-// 매매일지(주된 사업) → 전자결재 → 프로젝트(진행중 업무관리) → 제규정 →
-// 부서자료(완료 프로젝트 아카이브, 조회 위주) → 기초정보(마스터데이터, 맨 뒤).
+// 메뉴는 큰 메뉴 4개 + 설정으로 줄이고, 비슷한 화면은 둘째 줄의 탭으로 묶는다(모바일에서 한 줄에 다 보이게).
+//  · 홈: 지금 처리할 일·일정 요약
+//  · 업무·일정: 진행 중 프로젝트 / 완료 프로젝트(예전 부서자료) / 일정(달력)
+//  · 매매일지
+//  · 문서: 기안·결재(전자결재) / 규정·정관(제규정)
+//  · 설정: 부서·서식·직인·날인기록부(예전 기초정보)
 const GROUPS = [
-  ['home', '대시보드', [['dashboard', '대시보드', renderDashboard]]],
-  ['schedule', '일정관리', [['schedules', '일정관리', renderSchedules]]],
-  ['trade', '매매일지', [['trades', '매매일지', renderTradeLog]]],
-  ['reg', '제규정', [['regs', '규정목록', renderRegulations]]],
-  ['approval', '전자결재', [['docs', '문서함', renderDocuments]]],
-  ['project', '프로젝트', [['projects', '진행 현황', renderProjects]]],
-  ['dept', '부서자료', [['archive', '완료 프로젝트', renderProjectArchive]]],
+  ['home', '홈', [['dashboard', '홈', renderDashboard]]],
   [
-    'base',
-    '기초정보',
+    'work',
+    '업무·일정',
+    [
+      ['projects', '진행 중', renderProjects],
+      ['archive', '완료', renderProjectArchive],
+      ['schedules', '일정', renderSchedules],
+    ],
+  ],
+  ['trade', '매매일지', [['trades', '매매일지', renderTradeLog]]],
+  [
+    'docs',
+    '문서',
+    [
+      ['docs', '기안·결재', renderDocuments],
+      ['regs', '규정·정관', renderRegulations],
+    ],
+  ],
+  [
+    'settings',
+    '설정',
     [
       ['depts', '부서관리', renderDepartments],
       ['templates', '서식관리', renderDocTemplates],
@@ -74,8 +89,8 @@ async function render() {
   const curGroup = groupOf(cur) ?? GROUPS[0];
 
   navEl.innerHTML = `
-    <div class="nav-row nav-groups">${GROUPS.map(([k, label]) => `<button class="${k === curGroup[0] ? 'on' : ''}" data-group="${k}">${label}</button>`).join('')}</div>
-    ${curGroup[2].length > 1 ? `<div class="nav-row nav-items">${curGroup[2].map(([k, label]) => `<button class="${k === cur ? 'on' : ''}" data-view="${k}">${label}</button>`).join('')}</div>` : ''}`;
+    <div class="nav-row nav-groups compact">${GROUPS.map(([k, label]) => `<button class="${k === curGroup[0] ? 'on' : ''}" data-group="${k}">${label}</button>`).join('')}</div>
+    ${curGroup[2].length > 1 ? `<div class="nav-row nav-items compact">${curGroup[2].map(([k, label]) => `<button class="${k === cur ? 'on' : ''}" data-view="${k}">${label}</button>`).join('')}</div>` : ''}`;
 
   navEl.querySelectorAll('[data-group]').forEach((b) => {
     b.onclick = () => {
