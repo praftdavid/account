@@ -1,4 +1,4 @@
-import { COMPANY, implementationNo } from './letterhead.js';
+import { COMPANY, implementationNo, requiresIssuer } from './letterhead.js';
 import { applyHouseFonts, exportHwpx } from './hwpxCore.js';
 
 // 서식 없이 화면에서 직접 쓴 기안문·시행문을 공문서 모양(표어·회사명·수신·제목·본문·발송명의인·
@@ -32,12 +32,12 @@ export function letterheadHeader(doc) {
 }
 
 // 본문 + 발송명의인 + 수신자. 빈 줄도 문단이다(본문의 빈 줄 유지). 본문은 줄 간격을 넉넉히(165%) 둔다.
-export function letterheadParagraphs(doc, deptName) {
+export function letterheadParagraphs(doc, deptName, sealed = false) {
   const recipient = doc.recipient?.trim() || (doc.doc_type === '시행문' ? '' : '내부결재');
-  const issuer = doc.issuer_name?.trim();
   const list = String(doc.body ?? '').split('\n').map((line) => spec(line.replace(/\r$/, '')));
   if (list.length) list[0].before = 16 * SP; // 머리 블록과 본문 사이를 띄운다
-  if (issuer) list.push(spec(`${COMPANY.name}  ${issuer}`, { align: 'right', size: 16 * PT, before: 26 * SP, after: 8 * SP, issuerLine: true }));
+  // 외부 발송용(시행문)만 하단에 회사명·발송명의인과 직인(없으면 직인생략)을 둔다. 내부 결재(기안문)는 두지 않는다.
+  if (requiresIssuer(doc.doc_type)) list.push(spec(`${COMPANY.name}  ${doc.issuer_name?.trim() ?? ''}${sealed ? '' : '  (직인생략)'}`, { align: 'right', size: 16 * PT, before: 26 * SP, after: 8 * SP, issuerLine: true }));
   list.push(spec(`수신자 : ${recipient || '(내부)'}`, { before: 10 * SP, after: 10 * SP }));
   return list;
 }
@@ -111,7 +111,7 @@ export async function buildLetterheadHwpx(rhwp, JSZip, doc, deptName, sealBytes 
 
   // 1) 머리 블록(표)은 0번 문단에 놓고, 그 뒤로 본문 문단을 이어 붙인다.
   fillTable(hwp, 0, letterheadHeader(doc), false);
-  const paras = letterheadParagraphs(doc, deptName);
+  const paras = letterheadParagraphs(doc, deptName, !!sealBytes);
   const first = 1;
   hwp.splitParagraph(0, 0, 1); // 표 글자 자리(1) 뒤에서 나눠야 표가 0번 문단에 남는다
   paras.forEach((p, i) => {

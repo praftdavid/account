@@ -194,7 +194,7 @@ async function renderForm(container) {
   const syncFieldVisibility = () => {
     const need = requiresIssuer(typeSel.value);
     document.getElementById('f_issuer').required = need;
-    document.getElementById('issuerReq').textContent = need ? '(시행문은 필수)' : '(선택)';
+    document.getElementById('issuerReq').textContent = need ? '(시행문은 필수)' : '(기안문에는 표시되지 않음)';
   };
   typeSel.onchange = syncFieldVisibility;
   syncFieldVisibility();
@@ -366,7 +366,7 @@ async function renderDetail(container) {
     sealInfo = await fetchSeal(doc.seal_id);
     sealImg = sealInfo ? await loadSealImage(sealInfo).catch(() => null) : null;
   }
-  const canSeal = doc.status === 'approved' && !doc.seal_id && !!doc.issuer_name?.trim();
+  const canSeal = doc.status === 'approved' && !doc.seal_id && requiresIssuer(doc.doc_type) && !!doc.issuer_name?.trim();
 
   const actions = [];
   if (doc.status === 'draft') {
