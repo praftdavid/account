@@ -2,7 +2,7 @@ import { supabase } from '../../lib/supabaseClient.js';
 import { esc, todayStr } from '../../lib/util.js';
 import { renderAttachmentsWidget, uploadAttachment, listAttachments, deleteAttachment } from '../../lib/attachments.js';
 import { fetchDepartments } from '../lib/departments.js';
-import { DOC_TYPES, requiresIssuer, isExternalDoc, FONT_BODY } from '../lib/letterhead.js';
+import { DOC_TYPES, requiresIssuer, isExternalDoc, docNoPrefix, FONT_BODY } from '../lib/letterhead.js';
 import { renderLetterheadBody } from '../lib/letterheadPrint.js';
 import { exportElementToPdf } from '../lib/exportPdf.js';
 import { retentionDeadline } from '../lib/retention.js';
@@ -33,18 +33,18 @@ async function currentUserEmail() {
   return data?.user?.email ?? null;
 }
 
-// 문서번호는 레터헤드 양식의 "시행 : {부서명}_{연도}{일련번호}" 표기를 그대로 doc_no로 쓴다
-// (예: 경영지원팀_202601). 연도가 바뀌면 자연히 새 접두사로 1부터 다시 채번된다.
+// 문서번호는 "프래프트(경영)2026-001" 형식(회사명(부서 약칭)연도-일련번호 3자리)을 그대로 doc_no로 쓴다.
+// 부서·연도별로 따로 세고, 연도가 바뀌면 새 접두사로 001부터 다시 채번된다.
 async function nextDocNo(deptName) {
   const year = new Date().getFullYear();
-  const prefix = `${deptName}_${year}`;
+  const prefix = docNoPrefix(deptName, year);
   const { data, error } = await supabase.from('documents').select('doc_no').like('doc_no', `${prefix}%`);
   if (error) throw error;
   const maxSeq = (data ?? []).reduce((max, d) => {
     const seq = Number(String(d.doc_no).slice(prefix.length));
     return Number.isFinite(seq) ? Math.max(max, seq) : max;
   }, 0);
-  return `${prefix}${String(maxSeq + 1).padStart(2, '0')}`;
+  return `${prefix}${String(maxSeq + 1).padStart(3, '0')}`;
 }
 
 function deptLabel(departments, deptId) {
