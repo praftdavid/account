@@ -15,20 +15,19 @@ function spec(text, o = {}) {
   return { text, align: 'left', size: 12 * PT, before: 0, after: 0, line: 165, ...o };
 }
 
-// 농협 시행문 양식처럼 구분선은 문단 테두리가 아니라 표 칸의 굵은(1.0mm) 위·아래 선으로 만든다.
-// 선 굵기 값은 한글 선 굵기 표의 인덱스다(1 = 0.12mm, 10 = 1.0mm).
-const HEAVY = { type: 1, width: 10, color: '#000000' };
+// 정부 공문서 양식처럼 구분선은 가는 실선(0.12mm) 하나씩만 둔다: 제목 아래(머리와 본문 구분), 시행번호 블록 위.
+// 문단 테두리가 아니라 표 칸의 테두리로 그린다. 선 굵기 값은 한글 선 굵기 표의 인덱스다.
 const THIN = { type: 1, width: 1, color: '#000000' };
 const NONE = { type: 0, width: 0, color: '#000000' };
 
-// 위쪽 머리 블록(표어·회사명·수신·제목): 한 칸에 한 줄씩. 위·아래는 굵은 선, 회사명 아래는 가는 선.
+// 위쪽 머리 블록(표어·회사명·수신·제목): 한 칸에 한 줄씩. 선은 제목 아래 한 줄뿐.
 export function letterheadHeader(doc) {
   const recipient = doc.recipient?.trim() || (doc.doc_type === '시행문' ? '' : '내부결재');
   return [
-    { ...spec(COMPANY.slogan, { align: 'center', size: 13 * PT, line: 130 }), top: HEAVY, pad: 700 },
-    { ...spec(COMPANY.name, { align: 'center', size: 22 * PT, line: 130 }), bottom: THIN, pad: 500 },
+    { ...spec(COMPANY.slogan, { align: 'center', size: 13 * PT, line: 130 }), pad: 500 },
+    { ...spec(COMPANY.name, { align: 'center', size: 22 * PT, line: 130 }), pad: 500 },
     { ...spec(`수신 : ${recipient}`, { line: 150 }), pad: 450 },
-    { ...spec(`제목 : ${doc.title}`, { line: 150 }), bottom: HEAVY, pad: 450 },
+    { ...spec(`제목 : ${doc.title}`, { line: 150 }), bottom: THIN, pad: 450 },
   ];
 }
 
@@ -44,12 +43,12 @@ export function letterheadParagraphs(doc, deptName) {
 }
 
 // 시행번호·연락처 블록은 본문 뒤에 이어 붙이지 않고 쪽 맨 아래에 고정하는(용지 기준) 표로 둔다 — 본문이
-// 짧아도 항상 쪽 아래에 있어야 한다. 위·아래에 굵은 선.
+// 짧아도 항상 쪽 아래에 있어야 한다. 위에 가는 선 한 줄.
 export function letterheadFooter(doc, deptName) {
   return [
-    { ...spec(`시행 : ${implementationNo(doc, deptName)}`, { size: 10 * PT, line: 140 }), top: HEAVY, pad: 350 },
+    { ...spec(`시행 : ${implementationNo(doc, deptName)}`, { size: 10 * PT, line: 140 }), top: THIN, pad: 350 },
     { ...spec(`우 ${COMPANY.zip}  ${COMPANY.address} / 전화 ${COMPANY.phone} / FAX ${COMPANY.fax}`, { size: 9 * PT, line: 140 }), pad: 150 },
-    { ...spec(`(E-mail : ${COMPANY.email}) / 공개구분 : ${doc.disclosure ?? '공개'}`, { size: 9 * PT, line: 140 }), bottom: HEAVY, pad: 350 },
+    { ...spec(`(E-mail : ${COMPANY.email}) / 공개구분 : ${doc.disclosure ?? '공개'}`, { size: 9 * PT, line: 140 }), pad: 350 },
   ];
 }
 
