@@ -71,7 +71,7 @@ async function renderList(container, departments) {
 
   container.innerHTML = `
   <div class="card">
-    <p class="note" style="margin-bottom:10px">완료(아카이브) 처리된 프로젝트 보관함입니다. 진행 중인 프로젝트는 [전자결재] 옆 [프로젝트] 탭에서 관리하세요. 업무종류만 고르고 연도를 "전체 연도"로 두면 그 종류의 전체 기간 자료를 모아볼 수 있습니다.</p>
+    <p class="note" style="margin-bottom:10px">완료(아카이브) 처리된 프로젝트 보관함입니다. 진행 중인 프로젝트는 [업무·일정 > 진행 중] 탭에서 관리하세요. 업무종류만 고르고 연도를 "전체 연도"로 두면 그 종류의 전체 기간 자료를 모아볼 수 있습니다.</p>
     <div class="toolbar">
       <label style="margin-right:4px">부서</label>
       <select id="deptSel">${deptOptions}</select>
