@@ -49,7 +49,7 @@ export function exportHwpx(doc) {
 //   · 나머지 전부 = 본문 → 경기천년바탕
 // 모든 글자가 같은 크기면 제목이 따로 없는 문서로 보고 전부 본문 글꼴로 둔다.
 // Medium/Regular는 굵기라서, 굵게(bold) 표시는 빼야 서식이 의도한 굵기로 나온다(stripBold).
-export async function applyHouseFonts(JSZip, hwpxBytes, { stripBold = true, titleAtLeast = null } = {}) {
+export async function applyHouseFonts(JSZip, hwpxBytes, { stripBold = true, titleAtLeast = null, titleHeights = null } = {}) {
   const zip = await JSZip.loadAsync(hwpxBytes);
   const headerFile = zip.file('Contents/header.xml');
   if (!headerFile) return hwpxBytes;
@@ -59,7 +59,8 @@ export async function applyHouseFonts(JSZip, hwpxBytes, { stripBold = true, titl
   for (const name of Object.keys(zip.files)) {
     if (!/^Contents\/section\d+\.xml$/.test(name)) continue;
     const section = await zip.file(name).async('string');
-    for (const m of section.matchAll(/<hp:run charPrIDRef="(\d+)">([\s\S]*?)<\/hp:run>/g)) {
+    // 표 안의 글자도 run이라 run 안에 run이 들어 있다 — 안쪽 run만 잡아야 표 속 글자 모양이 빠지지 않는다.
+    for (const m of section.matchAll(/<hp:run charPrIDRef="(\d+)">((?:(?!<hp:run )[\s\S])*?)<\/hp:run>/g)) {
       if (/<hp:t[^>]*>[^<]*\S/.test(m[2])) used.add(m[1]);
     }
   }
@@ -69,8 +70,11 @@ export async function applyHouseFonts(JSZip, hwpxBytes, { stripBold = true, titl
   const maxH = Math.max(...usedHeights, 0);
   const minH = Math.min(...usedHeights, Infinity);
   // titleAtLeast: 표어·회사명처럼 제목 글꼴이 여러 줄에 필요한 문서는 이 크기 이상을 모두 제목으로 본다.
+  // titleHeights: 크기가 본문과 비슷해도(표어 11pt) 제목 글꼴이어야 하는 정확한 크기 목록. 이게 있으면 우선한다.
   const titleIds = new Set(
-    titleAtLeast != null
+    titleHeights
+      ? [...used].filter((id) => titleHeights.includes(heights.get(id)))
+      : titleAtLeast != null
       ? [...used].filter((id) => (heights.get(id) ?? 0) >= titleAtLeast)
       : maxH > minH
         ? [...used].filter((id) => heights.get(id) === maxH)

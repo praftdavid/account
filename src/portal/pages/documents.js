@@ -2,7 +2,7 @@ import { supabase } from '../../lib/supabaseClient.js';
 import { esc, todayStr } from '../../lib/util.js';
 import { renderAttachmentsWidget, uploadAttachment, listAttachments, deleteAttachment } from '../../lib/attachments.js';
 import { fetchDepartments } from '../lib/departments.js';
-import { DOC_TYPES, requiresIssuer, FONT_BODY } from '../lib/letterhead.js';
+import { DOC_TYPES, requiresIssuer, isExternalDoc, FONT_BODY } from '../lib/letterhead.js';
 import { renderLetterheadBody } from '../lib/letterheadPrint.js';
 import { exportElementToPdf } from '../lib/exportPdf.js';
 import { retentionDeadline } from '../lib/retention.js';
@@ -194,7 +194,7 @@ async function renderForm(container) {
   const syncFieldVisibility = () => {
     const need = requiresIssuer(typeSel.value);
     document.getElementById('f_issuer').required = need;
-    document.getElementById('issuerReq').textContent = need ? '(시행문은 필수)' : '(기안문에는 표시되지 않음)';
+    document.getElementById('issuerReq').textContent = need ? '(시행문은 필수)' : '(수신자가 없는 내부 기안에는 표시되지 않음)';
   };
   typeSel.onchange = syncFieldVisibility;
   syncFieldVisibility();
@@ -366,7 +366,7 @@ async function renderDetail(container) {
     sealInfo = await fetchSeal(doc.seal_id);
     sealImg = sealInfo ? await loadSealImage(sealInfo).catch(() => null) : null;
   }
-  const canSeal = doc.status === 'approved' && !doc.seal_id && requiresIssuer(doc.doc_type) && !!doc.issuer_name?.trim();
+  const canSeal = doc.status === 'approved' && !doc.seal_id && isExternalDoc(doc) && !!doc.issuer_name?.trim();
 
   const actions = [];
   if (doc.status === 'draft') {

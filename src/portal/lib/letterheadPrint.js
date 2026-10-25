@@ -1,5 +1,5 @@
 import { esc } from '../../lib/util.js';
-import { COMPANY, implementationNo, requiresIssuer, FONT_TITLE } from './letterhead.js';
+import { COMPANY, implementationNo, isExternalDoc, FONT_TITLE } from './letterhead.js';
 
 // 문서 상세 화면(인라인)과 인쇄 팝업이 이 함수 하나를 공유한다 — 둘 다 "PDF 뷰어처럼 바로
 // 읽히는" 같은 서식을 보여줘야 하기 때문에, 마크업을 두 곳에서 따로 만들지 않는다.
@@ -10,8 +10,8 @@ export function renderLetterheadBody(doc, deptName, sealDataUrl = null) {
   const sealMark = sealDataUrl
     ? `<span style="position:relative;display:inline-block;width:46px;height:1em;vertical-align:baseline"><img src="${sealDataUrl}" alt="직인" style="position:absolute;left:50%;top:50%;width:62px;height:62px;margin:-31px 0 0 -26px"></span>`
     : '(직인생략)';
-  // 외부 발송용(시행문)만 하단에 회사명·발송명의인과 직인(없으면 직인생략)을 둔다. 내부 결재(기안문)는 두지 않는다.
-  const issuerLine = requiresIssuer(doc.doc_type)
+  // 외부 발송용(시행문·수신자가 있는 문서)만 하단에 회사명·발송명의인과 직인(없으면 직인생략)을 둔다. 수신자 없는 내부 기안은 두지 않는다.
+  const issuerLine = isExternalDoc(doc)
     ? `<p style="text-align:right;font-size:14px;margin:${sealDataUrl ? '34px 20px 0 0' : '20px 0 0'};font-weight:bold">${esc(COMPANY.name)}&nbsp;&nbsp;${esc(doc.issuer_name ?? '')} ${sealMark}</p>`
     : '';
 
@@ -32,7 +32,7 @@ export function renderLetterheadBody(doc, deptName, sealDataUrl = null) {
 <div style="white-space:pre-wrap;line-height:2;font-size:14px;min-height:240px">${esc(doc.body)}</div>
 ${issuerLine}
 
-<p style="margin-top:${issuerLine ? '30' : '60'}px;font-size:14px">수신자 : ${esc(recipient || '(내부)')}</p>
+${issuerLine ? `<p style="margin-top:30px;font-size:14px">수신자 : ${esc(recipient || '(내부)')}</p>` : ''}
 
 </div>
 <div style="margin-top:auto">

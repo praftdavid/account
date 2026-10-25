@@ -1,4 +1,4 @@
-import { COMPANY, implementationNo, requiresIssuer } from './letterhead.js';
+import { COMPANY, implementationNo, isExternalDoc } from './letterhead.js';
 import { applyHouseFonts, exportHwpx } from './hwpxCore.js';
 
 // 서식 없이 화면에서 직접 쓴 기안문·시행문을 공문서 모양(표어·회사명·수신·제목·본문·발송명의인·
@@ -9,7 +9,8 @@ const PT = 100; // rhwp 글자 크기 단위: 1pt = 100
 // 문단 앞뒤 간격: rhwp에 넘긴 값의 절반이 HWPX에 저장된다(넘긴 200 → 저장 100, 약 1pt). 그래서 읽기 쉽게
 // pt 단위로 적고 넘길 때 ×200으로 바꾼다(1pt = 저장 100 = 넘기는 값 200).
 const SP = 200;
-const TITLE_MIN = 1300; // 이 크기 이상(표어·회사명·발송명의인)은 제목 글꼴, 그 아래(본문)는 본문 글꼴
+// 제목 글꼴로 쓰는 글자 크기(표어 11pt·발송명의인 16pt·회사명 22pt). 나머지(본문 12pt 이하)는 본문 글꼴.
+const TITLE_SIZES = [11 * PT, 16 * PT, 22 * PT];
 
 function spec(text, o = {}) {
   return { text, align: 'left', size: 12 * PT, before: 0, after: 0, line: 165, ...o };
@@ -24,7 +25,7 @@ const NONE = { type: 0, width: 0, color: '#000000' };
 export function letterheadHeader(doc) {
   const recipient = doc.recipient?.trim() || (doc.doc_type === '시행문' ? '' : '내부결재');
   return [
-    { ...spec(COMPANY.slogan, { align: 'center', size: 13 * PT, line: 130 }), pad: 500, h: 2148 },
+    { ...spec(COMPANY.slogan, { align: 'center', size: 11 * PT, line: 130 }), pad: 500, h: 2148 },
     { ...spec(COMPANY.name, { align: 'center', size: 22 * PT, line: 130 }), pad: 500, h: 3614 },
     { ...spec(`수신 : ${recipient}`, { line: 150 }), pad: 450, h: 2331 },
     { ...spec(`제목 : ${doc.title}`, { line: 150 }), bottom: THIN, pad: 450, h: 2331 },
@@ -36,9 +37,11 @@ export function letterheadParagraphs(doc, deptName, sealed = false) {
   const recipient = doc.recipient?.trim() || (doc.doc_type === '시행문' ? '' : '내부결재');
   const list = String(doc.body ?? '').split('\n').map((line) => spec(line.replace(/\r$/, '')));
   if (list.length) list[0].before = 16 * SP; // 머리 블록과 본문 사이를 띄운다
-  // 외부 발송용(시행문)만 하단에 회사명·발송명의인과 직인(없으면 직인생략)을 둔다. 내부 결재(기안문)는 두지 않는다.
-  if (requiresIssuer(doc.doc_type)) list.push(spec(`${COMPANY.name}  ${doc.issuer_name?.trim() ?? ''}${sealed ? '' : '  (직인생략)'}`, { align: 'right', size: 16 * PT, before: 26 * SP, after: 8 * SP, issuerLine: true }));
-  list.push(spec(`수신자 : ${recipient || '(내부)'}`, { before: 10 * SP, after: 10 * SP }));
+  // 외부 발송용(시행문·수신자가 있는 문서)만 하단에 회사명·발송명의인과 직인(없으면 직인생략)과 수신자를 둔다.
+  // 수신자 없는 내부 기안은 둘 다 두지 않는다.
+  const external = isExternalDoc(doc);
+  if (external) list.push(spec(`${COMPANY.name}  ${doc.issuer_name?.trim() ?? ''}${sealed ? '' : '  (직인생략)'}`, { align: 'right', size: 16 * PT, before: 26 * SP, after: 8 * SP, issuerLine: true }));
+  if (external) list.push(spec(`수신자 : ${recipient || '(내부)'}`, { before: 10 * SP, after: 10 * SP }));
   return list;
 }
 
@@ -145,6 +148,6 @@ export async function buildLetterheadHwpx(rhwp, JSZip, doc, deptName, sealBytes 
 
   const { bytes, loss } = exportHwpx(hwp);
   const sealed = sealBytes ? await placeSealInline(JSZip, bytes) : bytes;
-  const fonted = await applyHouseFonts(JSZip, sealed, { titleAtLeast: TITLE_MIN });
+  const fonted = await applyHouseFonts(JSZip, sealed, { titleHeights: TITLE_SIZES });
   return { bytes: fonted, loss };
 }

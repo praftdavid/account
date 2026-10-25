@@ -36,3 +36,9 @@ export function implementationNo(doc, deptName) {
 export function requiresIssuer(docType) {
   return docType === '시행문';
 }
+
+// 외부 발송용 문서: 시행문이거나 수신자가 적힌 문서. 수신자가 없는 내부 기안은 외부 발송이 아니라서
+// 하단에 회사명·직인(또는 직인생략)과 수신자 줄을 두지 않는다.
+export function isExternalDoc(doc) {
+  return requiresIssuer(doc.doc_type) || !!doc.recipient?.trim();
+}
