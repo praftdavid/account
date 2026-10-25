@@ -71,7 +71,7 @@ export async function renderDashboard(container) {
       tagClass: 'ok',
       title: `${t.stock_name} ${t.side === 'buy' ? '매수' : '매도'} 복기 작성`,
       meta: `${t.trade_date} 기록 · 투자 판단 돌아보기`,
-      open: () => (openTrade(t.trade_id), navigate('trades')),
+      open: () => (openTrade(t.trade_id), navigate('tradesTodo')),
     })
   );
 

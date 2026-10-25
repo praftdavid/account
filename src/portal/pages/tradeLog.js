@@ -17,6 +17,7 @@ let stockFilter = 'all';
 let strategyFilter = 'all';
 let reasonFilter = 'all';
 let yearFilter = 'all';
+let reviewFilter = 'all'; // 'all' | 'todo'(복기 필요) | 'done'(복기 완료) — 메뉴 탭이 정한다
 
 export function resetView() {
   mode = 'list';
@@ -43,7 +44,9 @@ function yearOf(dateStr) {
   return dateStr ? Number(String(dateStr).slice(0, 4)) : null;
 }
 
-export async function renderTradeLog(container) {
+// review: 메뉴 탭(전체/복기 필요/복기 완료)에서 넘어오는 값. 목록 안에서 필터를 바꿔 다시 그릴 때는 생략돼 이전 값을 유지한다.
+export async function renderTradeLog(container, review) {
+  if (review) reviewFilter = review;
   if (mode === 'list') return renderList(container);
   if (mode === 'new' || mode === 'edit') return renderForm(container);
   return renderDetail(container);
@@ -67,6 +70,7 @@ async function renderList(container) {
       (stockFilter === 'all' || t.stock_name === stockFilter) &&
       (strategyFilter === 'all' || t.strategy === strategyFilter) &&
       (reasonFilter === 'all' || (t.reasons ?? []).some((r) => r.category === reasonFilter)) &&
+      (reviewFilter === 'all' || (reviewFilter === 'todo' ? !t.review : !!t.review)) &&
       (yearFilter === 'all' || yearOf(t.trade_date) === Number(yearFilter))
   );
 
@@ -86,6 +90,7 @@ async function renderList(container) {
         <td class="c"><span class="badge ${SIDE_BADGE[t.side]}">${SIDE_LABEL[t.side]}</span></td>
         <td>${(t.reasons ?? []).map((r) => `<span class="badge draft" style="margin-right:4px">${esc(r.category)}</span>`).join('')}</td>
         <td class="c">${esc(t.strategy ?? '')}</td>
+        <td class="c"><span class="badge ${t.review ? 'ok' : 'draft'}">${t.review ? '복기 완료' : '복기 필요'}</span></td>
         <td class="num">${fmt(t.quantity)}</td>
         <td class="num">${fmt(t.price)}</td>
         <td class="num">${fmt(t.quantity * t.price)}</td>
@@ -105,8 +110,8 @@ async function renderList(container) {
       <button class="btn" id="newTradeBtn" style="margin-left:auto">매매 기록</button>
     </div>
     <div style="overflow-x:auto"><table>
-      <tr><th>거래일</th><th>종목</th><th>구분</th><th>근거</th><th>전략</th><th>수량</th><th>단가</th><th>총액</th><th>작성자</th></tr>
-      ${rows || '<tr><td colspan="9" class="note" style="text-align:center">등록된 매매일지가 없습니다.</td></tr>'}
+      <tr><th>거래일</th><th>종목</th><th>구분</th><th>근거</th><th>전략</th><th>복기</th><th>수량</th><th>단가</th><th>총액</th><th>작성자</th></tr>
+      ${rows || `<tr><td colspan="10" class="note" style="text-align:center">${reviewFilter === 'todo' ? '복기할 매매가 없습니다.' : reviewFilter === 'done' ? '복기를 마친 매매가 없습니다.' : '등록된 매매일지가 없습니다.'}</td></tr>`}
     </table></div>
   </div>`;
 

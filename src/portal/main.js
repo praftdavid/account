@@ -3,6 +3,7 @@ import { renderLogin } from '../pages/login.js';
 import { renderDashboard } from './pages/dashboard.js';
 import { renderSchedules, resetView as resetSchedules } from './pages/schedules.js';
 import { renderTradeLog, resetView as resetTradeLog } from './pages/tradeLog.js';
+import { renderAllDocuments } from './pages/documentsAll.js';
 import { renderDocuments, resetView as resetDocuments } from './pages/documents.js';
 import { renderRegulations, resetView as resetRegulations } from './pages/regulations.js';
 import { renderProjects, resetView as resetProjects } from './pages/projects.js';
@@ -16,7 +17,7 @@ import { setRenderer, getCurrentView, setCurrentView } from './nav.js';
 // 새 글 작성/수정 화면을 보다가 다른 탭으로 갔다 와도 항상 목록부터 보이도록, 실제 네비게이션
 // (nav 클릭)으로 들어올 때만 해당 화면을 목록 모드로 되돌린다 — 저장 후 상세로 넘어가는 등
 // 페이지 내부 전환은 이 리셋을 거치지 않고 각자 알아서 처리한다.
-const VIEW_RESET = { schedules: resetSchedules, trades: resetTradeLog, docs: resetDocuments, regs: resetRegulations, projects: resetProjects, archive: resetProjectArchive, templates: resetDocTemplates };
+const VIEW_RESET = { schedules: resetSchedules, trades: resetTradeLog, tradesTodo: resetTradeLog, tradesDone: resetTradeLog, docs: resetDocuments, regs: resetRegulations, projects: resetProjects, archive: resetProjectArchive, templates: resetDocTemplates };
 
 // 메뉴는 큰 메뉴 4개로 줄이고(설정은 계정 메뉴 안), 비슷한 화면은 둘째 줄의 탭으로 묶는다(모바일에서 한 줄에 다 보이게).
 //  · 홈: 지금 처리할 일·일정 요약
@@ -35,11 +36,20 @@ const GROUPS = [
       ['schedules', '일정', renderSchedules],
     ],
   ],
-  ['trade', '매매일지', [['trades', '매매일지', renderTradeLog]]],
+  [
+    'trade',
+    '매매일지',
+    [
+      ['trades', '전체', (c) => renderTradeLog(c, 'all')],
+      ['tradesTodo', '복기 필요', (c) => renderTradeLog(c, 'todo')],
+      ['tradesDone', '복기 완료', (c) => renderTradeLog(c, 'done')],
+    ],
+  ],
   [
     'docs',
     '문서',
     [
+      ['allDocs', '전체', renderAllDocuments],
       ['docs', '기안·결재', renderDocuments],
       ['regs', '규정·정관', renderRegulations],
     ],

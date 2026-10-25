@@ -17,6 +17,12 @@ export function resetView() {
   currentRegId = null;
 }
 
+// 문서 > 전체 목록에서 규정을 누르면 규정 상세가 바로 열리게 한다.
+export function openRegulation(regId) {
+  mode = 'view';
+  currentRegId = regId;
+}
+
 function yearOf(reg) {
   const d = reg.effective_date ?? reg.created_at;
   return d ? Number(String(d).slice(0, 4)) : null;
