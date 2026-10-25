@@ -129,7 +129,6 @@ function officialFieldsBlock(doc) {
 async function renderForm(container) {
   const [departments, templates] = await Promise.all([
     fetchDepartments({ activeOnly: true }),
-    fetchExpenseAccounts(),
     fetchTemplates().catch(() => []),
   ]);
   let doc = null;
