@@ -1,7 +1,7 @@
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 
-// 상세화면에 이미 그려진 레터헤드/지급회의서 카드(letterheadPrint.js·expenseResolution.js가
+// 상세화면에 이미 그려진 레터헤드 카드(letterheadPrint.js가
 // 만든 것과 동일한 마크업)를 그대로 캡처해 PDF로 저장한다 — 브라우저 인쇄창(window.print)에
 // 의존하지 않아 팝업 차단이나 인쇄 대화상자 문제 없이 항상 같은 결과가 나온다.
 export async function exportElementToPdf(element, filename) {

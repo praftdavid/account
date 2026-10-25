@@ -98,7 +98,7 @@ URL 라우터가 없다. 각 앱의 `main.js`가 메뉴를 `GROUPS` 배열(그�
 - 각 거래를 개별 행으로 기록한다. 매수-매도를 묶는 포지션 단위 손익 계산은 없다.
 
 ### 5.4 전자결재 (`documents`)
-- 문서 종류: **기안문 / 시행문 / 지급회의서**. 발송명의인이 있으면 시행문 성격. 지급회의서는 계정과목·지출일자·금액·증빙·세무처리를 입력하고, 계정과목은 **관리회계의 `accounts`(비용 계정)를 그대로 조회**한다 — 두 앱이 연결되는 지점.
+- 문서 종류: **기안문 / 시행문**. 발송명의인이 있으면 시행문 성격. (지급회의서는 쓰지 않아 없앴다 — 지출 결의는 관리회계 앱에서 한다.)
 - 상태 흐름:
 
   ```
@@ -151,7 +151,7 @@ URL 라우터가 없다. 각 앱의 `main.js`가 메뉴를 `GROUPS` 배열(그�
 | 테이블 | 내용 | 주요 관계 |
 |---|---|---|
 | `departments` | 부서 | — |
-| `documents` | 기안문·시행문·지급회의서. `status`는 draft/submitted/approved/rejected/recalled. 직인 컬럼 `seal_id`·`sealed_at`·`sealed_by` | → departments, accounts(지급회의서), seals |
+| `documents` | 기안문·시행문. `status`는 draft/submitted/approved/rejected/recalled. 직인 컬럼 `seal_id`·`sealed_at`·`sealed_by` | → departments, seals |
 | `document_events` | 결재 이력 | → documents (삭제 시 같이 삭제) |
 | `doc_templates` | 기안 서식 | — |
 | `seals` | 직인 이미지 경로, `is_active`(사용 중 1개) | — |
