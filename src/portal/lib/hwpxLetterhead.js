@@ -24,10 +24,10 @@ const NONE = { type: 0, width: 0, color: '#000000' };
 export function letterheadHeader(doc) {
   const recipient = doc.recipient?.trim() || (doc.doc_type === '시행문' ? '' : '내부결재');
   return [
-    { ...spec(COMPANY.slogan, { align: 'center', size: 13 * PT, line: 130 }), pad: 500 },
-    { ...spec(COMPANY.name, { align: 'center', size: 22 * PT, line: 130 }), pad: 500 },
-    { ...spec(`수신 : ${recipient}`, { line: 150 }), pad: 450 },
-    { ...spec(`제목 : ${doc.title}`, { line: 150 }), bottom: THIN, pad: 450 },
+    { ...spec(COMPANY.slogan, { align: 'center', size: 13 * PT, line: 130 }), pad: 500, h: 2148 },
+    { ...spec(COMPANY.name, { align: 'center', size: 22 * PT, line: 130 }), pad: 500, h: 3614 },
+    { ...spec(`수신 : ${recipient}`, { line: 150 }), pad: 450, h: 2331 },
+    { ...spec(`제목 : ${doc.title}`, { line: 150 }), bottom: THIN, pad: 450, h: 2331 },
   ];
 }
 
@@ -46,13 +46,13 @@ export function letterheadParagraphs(doc, deptName) {
 // 짧아도 항상 쪽 아래에 있어야 한다. 위에 가는 선 한 줄.
 export function letterheadFooter(doc, deptName) {
   return [
-    { ...spec(`시행 : ${implementationNo(doc, deptName)}`, { size: 10 * PT, line: 140 }), top: THIN, pad: 350 },
-    { ...spec(`우 ${COMPANY.zip}  ${COMPANY.address} / 전화 ${COMPANY.phone} / FAX ${COMPANY.fax}`, { size: 9 * PT, line: 140 }), pad: 150 },
-    { ...spec(`(E-mail : ${COMPANY.email}) / 공개구분 : ${doc.disclosure ?? '공개'}`, { size: 9 * PT, line: 140 }), pad: 350 },
+    { ...spec(`시행 : ${implementationNo(doc, deptName)}`, { size: 10 * PT, line: 140 }), top: THIN, pad: 350, h: 1848 },
+    { ...spec(`우 ${COMPANY.zip}  ${COMPANY.address} / 전화 ${COMPANY.phone} / FAX ${COMPANY.fax}`, { size: 9 * PT, line: 140 }), pad: 150, h: 1748 },
+    { ...spec(`(E-mail : ${COMPANY.email}) / 공개구분 : ${doc.disclosure ?? '공개'}`, { size: 9 * PT, line: 140 }), pad: 350, h: 1748 },
   ];
 }
 
-// 한 칸짜리 열(1열) 표를 만들고 칸마다 글자·서식·테두리를 채운다. 표를 둔 문단 번호를 돌려준다.
+// 칸 높이(h)는 한글에서 직접 맞춘 값이다. 한 칸짜리 열(1열) 표를 만들고 칸마다 글자·서식·테두리를 채운다. 표를 둔 문단 번호를 돌려준다.
 function fillTable(hwp, at, rows, floating) {
   const made = JSON.parse(
     hwp.createTableEx(JSON.stringify({ sectionIdx: 0, paraIdx: at, charOffset: 0, rowCount: rows.length, colCount: 1, treatAsChar: !floating }))
@@ -63,7 +63,7 @@ function fillTable(hwp, at, rows, floating) {
       0,
       p,
       c,
-      JSON.stringify({ treatAsChar: false, textWrap: 'TopAndBottom', vertRelTo: 'Paper', vertAlign: 'Bottom', vertOffset: 2000, horzRelTo: 'Page', horzAlign: 'Center' })
+      JSON.stringify({ treatAsChar: false, textWrap: 'TopAndBottom', vertRelTo: 'Paper', vertAlign: 'Bottom', vertOffset: 10491, horzRelTo: 'Page', horzAlign: 'Center' })
     );
   }
   rows.forEach((r, i) => {
@@ -79,7 +79,7 @@ function fillTable(hwp, at, rows, floating) {
       p,
       c,
       i,
-      JSON.stringify({ borderLeft: NONE, borderRight: NONE, borderTop: top, borderBottom: bottom, paddingTop: r.pad, paddingBottom: r.pad, paddingLeft: 200, paddingRight: 200, verticalAlign: 1 })
+      JSON.stringify({ borderLeft: NONE, borderRight: NONE, borderTop: top, borderBottom: bottom, height: r.h, paddingTop: r.pad, paddingBottom: r.pad, paddingLeft: 200, paddingRight: 200, verticalAlign: 1 })
     );
   });
   return made;
@@ -106,7 +106,7 @@ export async function buildLetterheadHwpx(rhwp, JSZip, doc, deptName, sealBytes 
   // 쪽 여백(표 너비가 여기서 정해지므로 표를 만들기 전에 먼저). 아래 여백은 하단 고정 블록 자리까지 비워 둔다.
   hwp.setPageDef(
     0,
-    JSON.stringify({ ...JSON.parse(hwp.getPageDef(0)), marginLeft: 7000, marginRight: 7000, marginTop: 6000, marginBottom: 9500, marginHeader: 2000, marginFooter: 2000 })
+    JSON.stringify({ ...JSON.parse(hwp.getPageDef(0)), marginLeft: 7000, marginRight: 7000, marginTop: 6000, marginBottom: 8503, marginHeader: 2000, marginFooter: 0 })
   );
 
   // 1) 머리 블록(표)은 0번 문단에 놓고, 그 뒤로 본문 문단을 이어 붙인다.
