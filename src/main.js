@@ -144,9 +144,23 @@ async function render() {
 
   const curGroup = groupOf(cur) ?? GROUPS[0];
 
+  // 메뉴 줄을 다시 그리면 옆으로 밀어 둔 위치가 처음으로 돌아가므로, 위치를 기억했다가 되돌린다.
+  const prevGroupScroll = navEl.querySelector('.nav-groups')?.scrollLeft ?? 0;
   navEl.innerHTML = `
     <div class="nav-row nav-groups">${GROUPS.map(([k, label]) => `<button class="${k === curGroup[0] ? 'on' : ''}" data-group="${k}">${label}</button>`).join('')}</div>
     ${curGroup[2].length > 1 ? `<div class="nav-row nav-items">${curGroup[2].map(([k, label]) => `<button class="${k === cur ? 'on' : ''}" data-view="${k}">${label}</button>`).join('')}</div>` : ''}`;
+
+  const groupRow = navEl.querySelector('.nav-groups');
+  if (groupRow) groupRow.scrollLeft = prevGroupScroll;
+  // 선택된 메뉴가 화면 밖이면 보이는 곳까지만 밀어 준다.
+  navEl.querySelectorAll('.nav-row').forEach((row) => {
+    const on = row.querySelector('button.on');
+    if (!on) return;
+    const left = on.offsetLeft;
+    const right = left + on.offsetWidth;
+    if (left < row.scrollLeft) row.scrollLeft = Math.max(0, left - 8);
+    else if (right > row.scrollLeft + row.clientWidth) row.scrollLeft = right - row.clientWidth + 8;
+  });
 
   navEl.querySelectorAll('[data-group]').forEach((b) => {
     b.onclick = () => {
