@@ -1,21 +1,13 @@
 import { supabase } from '../../lib/supabaseClient.js';
 import { esc, todayStr } from '../../lib/util.js';
 import { fetchDepartments } from '../lib/departments.js';
-import { daysUntil, ddayLabel, ddayClass, fetchProjectDeadlines, openNewSchedule } from './schedules.js';
+import { daysUntil, ddayLabel, ddayClass, fetchProjectDeadlines } from './schedules.js';
 import { openProject } from './projects.js';
-import { openDocument, openNewDocument } from './documents.js';
-import { openTrade, openNewTrade } from './tradeLog.js';
+import { openDocument } from './documents.js';
+import { openTrade } from './tradeLog.js';
 import { navigate } from '../nav.js';
 
 const WEEKDAY = ['일', '월', '화', '수', '목', '금', '토'];
-
-// 빠른 실행 버튼의 선 아이콘(색은 글자색을 따라간다).
-const svg = (d) => `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
-const ICON = {
-  doc: svg('<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 12v5M9.5 14.5h5"/>'),
-  trade: svg('<path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 15l3-4 3 2 5-6"/>'),
-  sched: svg('<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/><path d="M9 14.5l2 2 4-4"/>'),
-};
 
 function dateStr(ts) {
   return ts ? String(ts).slice(0, 10) : '';
@@ -132,12 +124,6 @@ export async function renderDashboard(container) {
       <div class="note">놓치지 말아야 할 일부터 차근차근 처리하세요.</div>
     </div>
 
-    <div class="home-quick">
-      <button class="home-quick-btn" id="quickDoc">${ICON.doc}<span>문서 작성</span></button>
-      <button class="home-quick-btn" id="quickTrade">${ICON.trade}<span>매매 기록</span></button>
-      <button class="home-quick-btn" id="quickSched">${ICON.sched}<span>일정 등록</span></button>
-    </div>
-
     <div class="card">
       <h2>지금 처리할 일 <span class="home-count">${todo.length}</span></h2>
       ${todoRows || '<p class="note">지금 처리할 일이 없습니다.</p>'}
@@ -150,7 +136,7 @@ export async function renderDashboard(container) {
 
     <div class="card">
       <div class="toolbar"><h2 style="margin-bottom:0">다가오는 일정</h2><button class="btn ghost sm" id="allSched" style="margin-left:auto">전체 보기</button></div>
-      ${scheduleRows || '<p class="note">등록된 일정이 없습니다. [일정 등록]으로 추가하세요.</p>'}
+      ${scheduleRows || '<p class="note">등록된 일정이 없습니다. [업무·일정 > 일정]에서 추가하세요.</p>'}
     </div>
 
     <div class="card">
@@ -158,14 +144,11 @@ export async function renderDashboard(container) {
       ${regRows || '<p class="note">등록된 규정이 없습니다.</p>'}
     </div>
 
-    <a class="home-switch" href="/portal.html">관리회계 시스템으로 이동 →</a>
+    <a class="home-switch" href="/portal.html">관리회계 포털로 이동 →</a>
   </div>`;
 
   container.querySelectorAll('[data-todo]').forEach((b) => (b.onclick = () => todo[Number(b.dataset.todo)].open()));
   container.querySelectorAll('[data-project]').forEach((b) => (b.onclick = () => { openProject(Number(b.dataset.project)); navigate('projects'); }));
-  document.getElementById('quickDoc').onclick = () => { openNewDocument(); navigate('docs'); };
-  document.getElementById('quickTrade').onclick = () => { openNewTrade(); navigate('trades'); };
-  document.getElementById('quickSched').onclick = () => { openNewSchedule(); navigate('schedules'); };
   document.getElementById('allSched').onclick = () => navigate('schedules');
   document.getElementById('allRegs').onclick = () => navigate('regs');
 }

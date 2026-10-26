@@ -103,7 +103,7 @@ async function render() {
       <div class="acct-sec">설정</div>
       ${settingsItems.map(([k, label]) => `<button data-acct-go="${k}">${label}</button>`).join('')}
       <div class="acct-sec"></div>
-      <a href="/portal.html">관리회계 시스템 →</a>
+      <a href="/portal.html">관리회계 포털 →</a>
       <button id="logoutBtn">로그아웃</button>
     </div>
   </div>`;
