@@ -107,7 +107,7 @@ async function render() {
   const curGroup = groupOf(cur) ?? GROUPS[0];
 
   navEl.innerHTML = `
-    <div class="nav-row nav-groups compact">${GROUPS.filter(([k]) => k !== 'settings').map(([k, label]) => `<button class="${k === curGroup[0] ? 'on' : ''}" data-group="${k}">${label}</button>`).join('')}</div>
+    <div class="nav-row nav-groups compact">${GROUPS.filter(([k]) => k !== 'settings' || k === curGroup[0]).map(([k, label]) => `<button class="${k === curGroup[0] ? 'on' : ''}" data-group="${k}">${label}</button>`).join('')}</div>
     ${curGroup[2].length > 1 ? `<div class="nav-row nav-items compact">${curGroup[2].map(([k, label]) => `<button class="${k === cur ? 'on' : ''}" data-view="${k}">${label}</button>`).join('')}</div>` : ''}`;
 
   navEl.querySelectorAll('[data-group]').forEach((b) => {
