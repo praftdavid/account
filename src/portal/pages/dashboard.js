@@ -41,10 +41,10 @@ export async function renderDashboard(container) {
 
   const upcoming = [...(rawSchedules ?? []).map((s) => ({ ...s, source: 'manual' })), ...projectDeadlines].sort((a, b) => a.due_date.localeCompare(b.due_date));
 
-  // 지금 처리할 일: 7일 안으로 다가왔거나 지난 일정 → 결재 대기·상신 전 문서 → 복기 안 쓴 매매 순서.
+  // 지금 처리할 일: 기한이 지난 일정 → 결재 대기·상신 전 문서 → 복기 안 쓴 매매 순서. 앞으로 다가올 일정은 "다가오는 일정"에서 본다.
   const todo = [];
   upcoming
-    .filter((s) => daysUntil(s.due_date) <= 7)
+    .filter((s) => daysUntil(s.due_date) < 0)
     .forEach((s) =>
       todo.push({
         tag: '일정',

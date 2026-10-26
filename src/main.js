@@ -27,6 +27,7 @@ import { renderTaxReserves } from './pages/taxReserves.js';
 import { renderTaxCredits } from './pages/taxCredits.js';
 import { renderDashboard } from './pages/dashboard.js';
 import { esc } from './lib/util.js';
+import { renderAccountMenu } from './lib/accountMenu.js';
 
 // 메뉴 배치 원칙:
 //  1. 회계 데이터 흐름 순서 — 기초정보(설정) → 자동분개(입력 자동화) → 전표·장부(기록) →
@@ -136,8 +137,10 @@ async function render() {
     return;
   }
 
-  userbarEl.innerHTML = `<span>${esc(session.user.email)}</span><button class="btn ghost sm" id="logoutBtn">로그아웃</button>`;
-  document.getElementById('logoutBtn').onclick = () => supabase.auth.signOut();
+  renderAccountMenu(userbarEl, session.user.email, [
+    { label: '문서 포털 →', href: '/index.html' },
+    { label: '로그아웃', run: () => supabase.auth.signOut() },
+  ]);
 
   const curGroup = groupOf(cur) ?? GROUPS[0];
 

@@ -241,7 +241,7 @@ select.acct{min-width:180px;}
 /* ── 문서포털 디자인 다듬기(body.portal 안에서만 적용 — 관리회계 앱은 그대로) ── */
 .portal header{padding:12px 18px;border-bottom:none;}
 .portal header h1{display:flex;align-items:center;gap:9px;}
-.portal header h1::before{content:'P';display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:9px;background:var(--brand);color:#fff;font-size:15px;font-weight:800;}
+.portal header h1::before{content:'';flex:none;width:30px;height:30px;border-radius:9px;background:url('/logo-mark.png') center/cover;box-shadow:0 0 0 1px var(--bd);}
 .portal nav{position:sticky;top:0;z-index:20;border-bottom:1px solid var(--bd);}
 .portal nav .nav-groups{background:var(--surface);border-bottom:none;padding:6px 12px 4px;gap:4px;}
 .portal nav .nav-groups button{border-radius:999px;border-bottom:none;padding:8px 16px;color:var(--text-sub);font-weight:600;}
@@ -268,9 +268,17 @@ select.acct{min-width:180px;}
   .portal .card{padding:16px;margin-bottom:12px;border-radius:16px;}
   .portal header{padding:10px 14px;}
   .portal nav .nav-groups{padding:6px 8px 2px;gap:2px;}
-  .portal nav .nav-groups button{padding:9px 2px;}
+  .portal nav .nav-groups.compact button{padding:9px 2px;}
+  .portal nav .nav-groups:not(.compact) button{padding:9px 13px;}
   .portal nav .nav-items{padding:2px 8px 8px;}
   .portal .home-hello h2{font-size:22px;}
 }
 .portal td a,.portal .card p a{color:var(--brand);text-decoration:none;font-weight:600;}
 .portal td a:hover,.portal .card p a:hover{text-decoration:underline;}
+
+/* 관리회계 포털처럼 큰 메뉴가 많은 화면은 모바일에서 한 줄로 두고 옆으로 밀어 본다 */
+@media(max-width:600px){
+  .portal nav .nav-row:not(.compact){flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;}
+  .portal nav .nav-row:not(.compact)::-webkit-scrollbar{display:none;}
+  .portal nav .nav-row:not(.compact) button{flex:none;white-space:nowrap;}
+}

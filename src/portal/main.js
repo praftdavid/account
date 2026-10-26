@@ -12,6 +12,7 @@ import { renderDepartments } from './pages/departments.js';
 import { renderDocTemplates, resetView as resetDocTemplates } from './pages/docTemplatesPage.js';
 import { renderSeals, renderSealLog } from './pages/seals.js';
 import { esc } from '../lib/util.js';
+import { renderAccountMenu } from '../lib/accountMenu.js';
 import { setRenderer, getCurrentView, setCurrentView } from './nav.js';
 
 // 새 글 작성/수정 화면을 보다가 다른 탭으로 갔다 와도 항상 목록부터 보이도록, 실제 네비게이션
@@ -69,8 +70,6 @@ const GROUPS = [
 const navEl = document.getElementById('nav');
 const mainEl = document.getElementById('main');
 const userbarEl = document.getElementById('userbar');
-// 메뉴 바깥을 누르면 계정 메뉴를 닫는다(한 번만 등록).
-document.addEventListener('click', () => { const pop = document.getElementById('acctPop'); if (pop) pop.hidden = true; });
 const homeLinkEl = document.getElementById('homeLink');
 if (homeLinkEl) homeLinkEl.onclick = () => go('dashboard');
 
@@ -94,24 +93,15 @@ async function render() {
     return;
   }
 
-  // 계정 메뉴: 이메일·설정(부서/서식/직인/날인기록부)·관리회계 이동·로그아웃을 한곳에 모아 상단을 단순하게 한다.
+  // 계정 메뉴: 이메일·설정(부서/서식/직인/날인기록부)·관리회계 포털 이동·로그아웃을 한곳에 모아 상단을 단순하게 한다.
   const settingsItems = GROUPS.find((g) => g[0] === 'settings')[2];
-  userbarEl.innerHTML = `<div class="acct">
-    <button class="acct-btn" id="acctBtn" aria-label="계정 메뉴">${esc((session.user.email ?? '?')[0].toUpperCase())}</button>
-    <div class="acct-pop" id="acctPop" hidden>
-      <div class="acct-mail">${esc(session.user.email)}</div>
-      <div class="acct-sec">설정</div>
-      ${settingsItems.map(([k, label]) => `<button data-acct-go="${k}">${label}</button>`).join('')}
-      <div class="acct-sec"></div>
-      <a href="/portal.html">관리회계 포털 →</a>
-      <button id="logoutBtn">로그아웃</button>
-    </div>
-  </div>`;
-  const acctPop = document.getElementById('acctPop');
-  document.getElementById('acctBtn').onclick = (ev) => { ev.stopPropagation(); acctPop.hidden = !acctPop.hidden; };
-  acctPop.onclick = (ev) => ev.stopPropagation();
-  userbarEl.querySelectorAll('[data-acct-go]').forEach((b) => (b.onclick = () => go(b.dataset.acctGo)));
-  document.getElementById('logoutBtn').onclick = () => supabase.auth.signOut();
+  renderAccountMenu(userbarEl, session.user.email, [
+    { heading: '설정' },
+    ...settingsItems.map(([k, label]) => ({ label, run: () => go(k) })),
+    { divider: true },
+    { label: '관리회계 포털 →', href: '/portal.html' },
+    { label: '로그아웃', run: () => supabase.auth.signOut() },
+  ]);
 
   const cur = getCurrentView();
   const curGroup = groupOf(cur) ?? GROUPS[0];
