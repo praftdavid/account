@@ -20,7 +20,8 @@ import { setRenderer, getCurrentView, setCurrentView } from './nav.js';
 // 페이지 내부 전환은 이 리셋을 거치지 않고 각자 알아서 처리한다.
 const VIEW_RESET = { schedules: resetSchedules, trades: resetTradeLog, tradesTodo: resetTradeLog, tradesDone: resetTradeLog, docs: resetDocuments, regs: resetRegulations, projects: resetProjects, archive: resetProjectArchive, templates: resetDocTemplates };
 
-// 메뉴는 큰 메뉴 4개로 줄이고(설정은 계정 메뉴 안), 비슷한 화면은 둘째 줄의 탭으로 묶는다(모바일에서 한 줄에 다 보이게).
+// 메뉴는 큰 메뉴 4개로 줄이고, 비슷한 화면은 둘째 줄의 탭으로 묶는다(모바일에서 한 줄에 다 보이게).
+// 설정(부서·서식·직인·날인기록부)은 메뉴 줄에 두지 않고 오른쪽 위 계정 메뉴로만 들어간다 — 들어가도 둘째 줄 탭은 없다.
 //  · 홈: 지금 처리할 일·일정 요약
 //  · 업무·일정: 진행 중 프로젝트 / 완료 프로젝트(예전 부서자료) / 일정(달력)
 //  · 매매일지
@@ -107,8 +108,8 @@ async function render() {
   const curGroup = groupOf(cur) ?? GROUPS[0];
 
   navEl.innerHTML = `
-    <div class="nav-row nav-groups compact">${GROUPS.filter(([k]) => k !== 'settings' || k === curGroup[0]).map(([k, label]) => `<button class="${k === curGroup[0] ? 'on' : ''}" data-group="${k}">${label}</button>`).join('')}</div>
-    ${curGroup[2].length > 1 ? `<div class="nav-row nav-items compact">${curGroup[2].map(([k, label]) => `<button class="${k === cur ? 'on' : ''}" data-view="${k}">${label}</button>`).join('')}</div>` : ''}`;
+    <div class="nav-row nav-groups compact">${GROUPS.filter(([k]) => k !== 'settings').map(([k, label]) => `<button class="${k === curGroup[0] ? 'on' : ''}" data-group="${k}">${label}</button>`).join('')}</div>
+    ${curGroup[2].length > 1 && curGroup[0] !== 'settings' ? `<div class="nav-row nav-items compact">${curGroup[2].map(([k, label]) => `<button class="${k === cur ? 'on' : ''}" data-view="${k}">${label}</button>`).join('')}</div>` : ''}`;
 
   navEl.querySelectorAll('[data-group]').forEach((b) => {
     b.onclick = () => {
