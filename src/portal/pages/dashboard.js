@@ -144,7 +144,6 @@ export async function renderDashboard(container) {
       ${regRows || '<p class="note">등록된 규정이 없습니다.</p>'}
     </div>
 
-    <a class="home-switch" href="/portal.html">관리회계 포털로 이동 →</a>
   </div>`;
 
   container.querySelectorAll('[data-todo]').forEach((b) => (b.onclick = () => todo[Number(b.dataset.todo)].open()));
