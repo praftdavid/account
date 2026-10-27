@@ -1,37 +1,65 @@
 import { supabase } from '../lib/supabaseClient.js';
 import { renderLogin } from '../pages/login.js';
 import { renderDashboard } from './pages/dashboard.js';
-import { renderSchedules, resetView as resetSchedules } from './pages/schedules.js';
-import { renderTradeLog, resetView as resetTradeLog } from './pages/tradeLog.js';
-import { renderDocuments, resetView as resetDocuments } from './pages/documents.js';
-import { renderRegulations, resetView as resetRegulations } from './pages/regulations.js';
-import { renderProjects, resetView as resetProjects } from './pages/projects.js';
-import { renderProjectArchive, resetView as resetProjectArchive } from './pages/projectArchive.js';
+import { renderSchedules, resetView as resetSchedules, getPageState as schedulesState, setPageState as setSchedulesState } from './pages/schedules.js';
+import { renderTradeLog, resetView as resetTradeLog, getPageState as tradesState, setPageState as setTradesState } from './pages/tradeLog.js';
+import { renderAllDocuments } from './pages/documentsAll.js';
+import { renderDocuments, resetView as resetDocuments, getPageState as docsState, setPageState as setDocsState } from './pages/documents.js';
+import { renderRegulations, resetView as resetRegulations, getPageState as regsState, setPageState as setRegsState } from './pages/regulations.js';
+import { renderProjects, resetView as resetProjects, getPageState as projectsState, setPageState as setProjectsState } from './pages/projects.js';
+import { renderProjectArchive, resetView as resetProjectArchive, getPageState as archiveState, setPageState as setArchiveState } from './pages/projectArchive.js';
 import { renderDepartments } from './pages/departments.js';
-import { renderDocTemplates, resetView as resetDocTemplates } from './pages/docTemplatesPage.js';
+import { renderDocTemplates, resetView as resetDocTemplates, getPageState as templatesState, setPageState as setTemplatesState } from './pages/docTemplatesPage.js';
 import { renderSeals, renderSealLog } from './pages/seals.js';
 import { esc } from '../lib/util.js';
+import { renderAccountMenu } from '../lib/accountMenu.js';
 import { setRenderer, getCurrentView, setCurrentView } from './nav.js';
+import { initHistory, trackHistory } from '../lib/viewHistory.js';
 
 // 새 글 작성/수정 화면을 보다가 다른 탭으로 갔다 와도 항상 목록부터 보이도록, 실제 네비게이션
 // (nav 클릭)으로 들어올 때만 해당 화면을 목록 모드로 되돌린다 — 저장 후 상세로 넘어가는 등
 // 페이지 내부 전환은 이 리셋을 거치지 않고 각자 알아서 처리한다.
-const VIEW_RESET = { schedules: resetSchedules, trades: resetTradeLog, docs: resetDocuments, regs: resetRegulations, projects: resetProjects, archive: resetProjectArchive, templates: resetDocTemplates };
+const VIEW_RESET = { schedules: resetSchedules, trades: resetTradeLog, tradesTodo: resetTradeLog, tradesDone: resetTradeLog, docs: resetDocuments, regs: resetRegulations, projects: resetProjects, archive: resetProjectArchive, templates: resetDocTemplates };
 
-// 메뉴 배치 원칙 — 실제로 자주 쓰는 순서대로: 대시보드 → 일정관리(신고·총회 등 기한 관리) →
-// 매매일지(주된 사업) → 전자결재 → 프로젝트(진행중 업무관리) → 제규정 →
-// 부서자료(완료 프로젝트 아카이브, 조회 위주) → 기초정보(마스터데이터, 맨 뒤).
+// 메뉴는 큰 메뉴 4개로 줄이고, 비슷한 화면은 둘째 줄의 탭으로 묶는다(모바일에서 한 줄에 다 보이게).
+// 설정(부서·서식·직인·날인기록부)은 메뉴 줄에 두지 않고 오른쪽 위 계정 메뉴로만 들어간다 — 들어가도 둘째 줄 탭은 없다.
+//  · 홈: 지금 처리할 일·일정 요약
+//  · 업무·일정: 진행 중 프로젝트 / 완료 프로젝트(예전 부서자료) / 일정(달력)
+//  · 매매일지
+//  · 문서: 기안·결재(전자결재) / 규정·정관(제규정)
+//  · 설정: 부서·서식·직인·날인기록부(예전 기초정보)
 const GROUPS = [
-  ['home', '대시보드', [['dashboard', '대시보드', renderDashboard]]],
-  ['schedule', '일정관리', [['schedules', '일정관리', renderSchedules]]],
-  ['trade', '매매일지', [['trades', '매매일지', renderTradeLog]]],
-  ['reg', '제규정', [['regs', '규정목록', renderRegulations]]],
-  ['approval', '전자결재', [['docs', '문서함', renderDocuments]]],
-  ['project', '프로젝트', [['projects', '진행 현황', renderProjects]]],
-  ['dept', '부서자료', [['archive', '완료 프로젝트', renderProjectArchive]]],
+  ['home', '홈', [['dashboard', '홈', renderDashboard]]],
   [
-    'base',
-    '기초정보',
+    'work',
+    '업무·일정',
+    [
+      ['projects', '진행 중', renderProjects],
+      ['archive', '완료', renderProjectArchive],
+      ['schedules', '일정', renderSchedules],
+    ],
+  ],
+  [
+    'trade',
+    '매매일지',
+    [
+      ['trades', '전체', (c) => renderTradeLog(c, 'all')],
+      ['tradesTodo', '복기 필요', (c) => renderTradeLog(c, 'todo')],
+      ['tradesDone', '복기 완료', (c) => renderTradeLog(c, 'done')],
+    ],
+  ],
+  [
+    'docs',
+    '문서',
+    [
+      ['allDocs', '전체', renderAllDocuments],
+      ['docs', '기안·결재', renderDocuments],
+      ['regs', '규정·정관', renderRegulations],
+    ],
+  ],
+  [
+    'settings',
+    '설정',
     [
       ['depts', '부서관리', renderDepartments],
       ['templates', '서식관리', renderDocTemplates],
@@ -40,6 +68,31 @@ const GROUPS = [
     ],
   ],
 ];
+
+// 뒤로가기(방문 기록)가 목록/작성/상세 상태를 되돌릴 수 있도록, 화면별 상태를 읽고 쓰는 함수를 모아 둔다.
+const PAGE_STATE = {
+  schedules: [schedulesState, setSchedulesState],
+  trades: [tradesState, setTradesState],
+  tradesTodo: [tradesState, setTradesState],
+  tradesDone: [tradesState, setTradesState],
+  docs: [docsState, setDocsState],
+  regs: [regsState, setRegsState],
+  projects: [projectsState, setProjectsState],
+  archive: [archiveState, setArchiveState],
+  templates: [templatesState, setTemplatesState],
+};
+const VIEW_KEYS = new Set(GROUPS.flatMap((g) => g[2].map((v) => v[0])));
+
+function currentState() {
+  const view = getCurrentView();
+  return { view, page: PAGE_STATE[view]?.[0]() ?? null };
+}
+
+function restoreState(s) {
+  if (!s || !VIEW_KEYS.has(s.view)) return;
+  setCurrentView(s.view);
+  PAGE_STATE[s.view]?.[1](s.page);
+}
 
 const navEl = document.getElementById('nav');
 const mainEl = document.getElementById('main');
@@ -67,15 +120,23 @@ async function render() {
     return;
   }
 
-  userbarEl.innerHTML = `<span>${esc(session.user.email)}</span><button class="btn ghost sm" id="logoutBtn">로그아웃</button>`;
-  document.getElementById('logoutBtn').onclick = () => supabase.auth.signOut();
+  // 계정 메뉴: 이메일·설정(부서/서식/직인/날인기록부)·관리회계 포털 이동·로그아웃을 한곳에 모아 상단을 단순하게 한다.
+  const settingsItems = GROUPS.find((g) => g[0] === 'settings')[2];
+  renderAccountMenu(userbarEl, session.user.email, [
+    { heading: '설정' },
+    ...settingsItems.map(([k, label]) => ({ label, run: () => go(k) })),
+    { divider: true },
+    { label: '관리회계 포털 →', href: '/portal.html' },
+    { label: '로그아웃', run: () => supabase.auth.signOut() },
+  ]);
 
+  trackHistory(); // 탭만 바뀌고 화면 상태가 없는 화면(홈·설정 등)도 방문 기록에 남긴다
   const cur = getCurrentView();
   const curGroup = groupOf(cur) ?? GROUPS[0];
 
   navEl.innerHTML = `
-    <div class="nav-row nav-groups">${GROUPS.map(([k, label]) => `<button class="${k === curGroup[0] ? 'on' : ''}" data-group="${k}">${label}</button>`).join('')}</div>
-    ${curGroup[2].length > 1 ? `<div class="nav-row nav-items">${curGroup[2].map(([k, label]) => `<button class="${k === cur ? 'on' : ''}" data-view="${k}">${label}</button>`).join('')}</div>` : ''}`;
+    <div class="nav-row nav-groups compact">${GROUPS.filter(([k]) => k !== 'settings').map(([k, label]) => `<button class="${k === curGroup[0] ? 'on' : ''}" data-group="${k}">${label}</button>`).join('')}</div>
+    <div class="nav-row nav-items compact">${curGroup[2].length > 1 && curGroup[0] !== 'settings' ? curGroup[2].map(([k, label]) => `<button class="${k === cur ? 'on' : ''}" data-view="${k}">${label}</button>`).join('') : ''}</div>`; // 하위 메뉴가 없어도 둘째 줄 자리는 비워 둔다
 
   navEl.querySelectorAll('[data-group]').forEach((b) => {
     b.onclick = () => {
@@ -98,6 +159,7 @@ setRenderer(render);
 
 supabase.auth.getSession().then(({ data }) => {
   session = data.session;
+  initHistory({ getState: currentState, restore: restoreState, apply: (st) => { restoreState(st); render(); } });
   render();
 });
 

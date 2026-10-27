@@ -1,10 +1,11 @@
 import { supabase } from '../../lib/supabaseClient.js';
+import { trackHistory } from '../../lib/viewHistory.js';
 import { esc } from '../../lib/util.js';
 import { fetchDepartments } from '../lib/departments.js';
 import { renderProjectDetailView } from './projects.js';
 import { PROJECT_CATEGORIES } from '../lib/projectCategories.js';
 
-// "부서자료" 탭 — 완료(아카이브) 처리된 프로젝트만 부서별로 모아 읽기전용으로 보여준다.
+// "완료" 탭 — 완료(아카이브) 처리된 프로젝트만 부서별로 모아 읽기전용으로 보여준다.
 // 진행중 프로젝트 편집은 전부 [프로젝트] 탭 쪽(projects.js)에서 하고, 여기는 조회 전용.
 let mode = 'list'; // 'list' | 'view'
 let currentProjectId = null;
@@ -21,7 +22,18 @@ function yearOf(dateStr) {
   return dateStr ? Number(String(dateStr).slice(0, 4)) : null;
 }
 
+// 뒤로가기(방문 기록)용: 지금 화면이 목록/작성/상세 중 무엇이고 어떤 항목인지.
+export function getPageState() {
+  return { mode, id: currentProjectId };
+}
+
+export function setPageState(s) {
+  mode = s?.mode ?? 'list';
+  currentProjectId = s?.id ?? null;
+}
+
 export async function renderProjectArchive(container) {
+  trackHistory();
   const departments = await fetchDepartments({ activeOnly: true });
   if (departments.length === 0) {
     container.innerHTML = '<div class="card"><p class="note">등록된 부서가 없습니다.</p></div>';
@@ -71,7 +83,7 @@ async function renderList(container, departments) {
 
   container.innerHTML = `
   <div class="card">
-    <p class="note" style="margin-bottom:10px">완료(아카이브) 처리된 프로젝트 보관함입니다. 진행 중인 프로젝트는 [전자결재] 옆 [프로젝트] 탭에서 관리하세요. 업무종류만 고르고 연도를 "전체 연도"로 두면 그 종류의 전체 기간 자료를 모아볼 수 있습니다.</p>
+    <p class="note" style="margin-bottom:10px">완료(아카이브) 처리된 프로젝트 보관함입니다. 진행 중인 프로젝트는 [업무·일정 > 진행 중] 탭에서 관리하세요. 업무종류만 고르고 연도를 "전체 연도"로 두면 그 종류의 전체 기간 자료를 모아볼 수 있습니다.</p>
     <div class="toolbar">
       <label style="margin-right:4px">부서</label>
       <select id="deptSel">${deptOptions}</select>

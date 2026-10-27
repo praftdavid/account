@@ -84,6 +84,11 @@ nav .nav-groups{background:var(--bg);border-bottom:1px solid var(--bd);}
 nav .nav-groups button{padding:9px 16px;color:var(--text-sub);border-bottom:2px solid transparent;}
 nav .nav-groups button.on{background:var(--surface);border-bottom-color:var(--brand);color:var(--brand);font-weight:700;}
 nav .nav-items{border-bottom:1px solid var(--bd);}
+/* 문서포털 메뉴(큰 메뉴 4개, 둘째 줄 탭)는 모바일에서도 한 줄에 꽉 차게 나눠 쓴다 */
+@media(max-width:600px){
+  nav .nav-row.compact{padding:0 4px;flex-wrap:nowrap;}
+  nav .nav-row.compact button{flex:1 1 0;min-width:0;padding:11px 2px;font-size:13px;white-space:nowrap;}
+}
 main{padding:24px 20px;max-width:1200px;margin:0 auto;}
 .card{background:var(--surface);border:1px solid var(--bd);box-shadow:var(--shadow);border-radius:var(--radius);padding:22px 24px;margin-bottom:18px;}
 .card h2{font-size:16px;font-weight:700;color:var(--text);margin-bottom:14px;letter-spacing:-.1px;line-height:1.4;}
@@ -203,3 +208,85 @@ select.acct{min-width:180px;}
 .hwp-viewer-title{flex:1;min-width:120px;font-size:14px;overflow-wrap:anywhere;}
 .hwp-viewer-body{flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;align-items:center;gap:12px;}
 .hwp-page{display:block;width:min(100%,794px);height:auto;background:#fff;box-shadow:var(--shadow-md);}
+
+/* ── 문서포털 홈 · 계정 메뉴 ── */
+.home{max-width:760px;margin:0 auto;}
+.home-hello{margin:2px 0 14px;}
+.home-hello h2{font-size:22px;font-weight:700;margin:4px 0 6px;letter-spacing:-.3px;}
+.home-quick{display:flex;gap:8px;margin-bottom:16px;}
+.home-quick .btn{flex:1;padding:12px 6px;white-space:nowrap;}
+.home .card h2{display:flex;align-items:center;gap:8px;}
+.home-count{font-size:13px;font-weight:700;color:var(--brand);}
+.home-row{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:none;border-top:1px solid var(--bd);padding:12px 2px;font-family:inherit;color:var(--text);cursor:pointer;}
+.home .card h2 + .home-row{border-top:none;}
+.home-row:hover{background:var(--bg);}
+.home-row-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;font-size:14px;word-break:keep-all;overflow-wrap:anywhere;}
+.home-row-main .note{font-size:12px;}
+.home-arrow{color:var(--text-mute);font-size:20px;}
+.home-line{display:flex;align-items:center;gap:10px;padding:10px 2px;border-top:1px solid var(--bd);}
+.home-line > .note{width:52px;flex:none;}
+.home-line .home-row-main{flex:1;}
+.home-switch{display:block;text-align:center;padding:14px;color:var(--text-sub);text-decoration:none;font-weight:600;}
+.acct{position:relative;}
+.acct-btn{width:32px;height:32px;border-radius:50%;border:1px solid var(--bd);background:var(--brand-light);color:var(--brand);font-weight:700;font-family:inherit;cursor:pointer;}
+.acct-pop{position:absolute;right:0;top:40px;z-index:30;min-width:210px;background:var(--surface);border:1px solid var(--bd);border-radius:var(--radius);box-shadow:var(--shadow-md);padding:8px;display:flex;flex-direction:column;}
+.acct-pop[hidden]{display:none;}
+.acct-pop button,.acct-pop a{background:none;border:none;text-align:left;padding:9px 10px;border-radius:var(--radius-sm);font-family:inherit;font-size:14px;color:var(--text);text-decoration:none;cursor:pointer;}
+.acct-pop button:hover,.acct-pop a:hover{background:var(--bg);}
+.acct-mail{padding:6px 10px 8px;font-size:12px;color:var(--text-mute);word-break:break-all;}
+.acct-sec{padding:8px 10px 2px;font-size:11px;color:var(--text-mute);}
+.acct-sec:empty{border-top:1px solid var(--bd);margin:6px 0 2px;padding:0;}
+@media(max-width:600px){.portal header .sub .app-switch{display:none;}}
+
+/* ── 문서포털 디자인 다듬기(body.portal 안에서만 적용 — 관리회계 앱은 그대로) ── */
+.portal header{padding:12px 18px;border-bottom:none;}
+.portal header h1{display:flex;align-items:center;gap:9px;}
+.portal header h1::before{content:'';flex:none;width:30px;height:30px;border-radius:9px;background:url('/logo-mark.png') center/cover;box-shadow:0 0 0 1px var(--bd);}
+.portal nav{position:sticky;top:0;z-index:20;border-bottom:1px solid var(--bd);}
+.portal nav .nav-groups{background:var(--surface);border-bottom:none;padding:6px 12px 4px;gap:4px;}
+.portal nav .nav-groups button{border-radius:999px;border-bottom:none;padding:8px 16px;color:var(--text-sub);font-weight:600;}
+.portal nav .nav-groups button:hover{background:var(--bg);color:var(--text);}
+.portal nav .nav-groups button.on{background:var(--brand-light);color:var(--brand);}
+.portal nav .nav-items{border-bottom:none;padding:2px 12px 8px;gap:4px;}
+.portal nav .nav-items button{border-radius:8px;border-bottom:none;padding:6px 12px;font-size:13px;color:var(--text-mute);}
+.portal nav .nav-items button:hover{background:var(--bg);}
+.portal nav .nav-items button.on{background:var(--bg);color:var(--text);font-weight:700;}
+.portal .card{border:none;border-radius:18px;padding:20px 22px;box-shadow:0 1px 2px rgba(25,31,40,.04),0 8px 22px rgba(25,31,40,.05);}
+.portal .kpi{border:none;border-radius:18px;}
+.portal :focus-visible{outline:2px solid var(--brand);outline-offset:2px;}
+.portal .home-hello h2{font-size:24px;letter-spacing:-.5px;}
+.portal .home-quick{gap:10px;}
+.portal .home-quick-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px 6px 14px;background:var(--surface);border:none;border-radius:18px;box-shadow:0 1px 2px rgba(25,31,40,.04),0 8px 22px rgba(25,31,40,.05);color:var(--brand);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;transition:transform .12s ease,background .12s ease;}
+.portal .home-quick-btn span{color:var(--text);}
+.portal .home-quick-btn:hover{background:var(--brand-light);}
+.portal .home-quick-btn:active{transform:scale(.97);}
+.portal .home-row{border-radius:12px;padding:12px 10px;margin:0 -10px;width:calc(100% + 20px);}
+.portal .home-row-main b{font-weight:700;}
+.portal .home-switch{background:var(--surface);border-radius:14px;margin-top:4px;box-shadow:0 1px 2px rgba(25,31,40,.04);}
+@media(max-width:600px){
+  .portal main{padding:12px 12px 32px;}
+  .portal .card{padding:16px;margin-bottom:12px;border-radius:16px;}
+  .portal header{padding:10px 14px;}
+  .portal nav .nav-groups{padding:6px 8px 2px;gap:2px;}
+  .portal nav .nav-groups.compact button{padding:9px 2px;}
+  .portal nav .nav-groups:not(.compact) button{padding:9px 13px;}
+  .portal nav .nav-items{padding:2px 8px 8px;}
+  .portal .home-hello h2{font-size:22px;}
+}
+.portal td a,.portal .card p a{color:var(--brand);text-decoration:none;font-weight:600;}
+.portal td a:hover,.portal .card p a:hover{text-decoration:underline;}
+
+/* 관리회계 포털처럼 큰 메뉴가 많은 화면은 모바일에서 한 줄로 두고 옆으로 밀어 본다 */
+@media(max-width:600px){
+  .portal nav .nav-row:not(.compact){flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;}
+  .portal nav .nav-row:not(.compact)::-webkit-scrollbar{display:none;}
+  .portal nav .nav-row:not(.compact) button{flex:none;white-space:nowrap;}
+}
+
+/* 둘째 줄(하위 메뉴) 자리는 항상 확보한다 — 하위 메뉴가 없는 메뉴로 옮겨도 화면이 위아래로 흔들리지 않게 */
+.portal nav .nav-items{min-height:44px;}
+
+/* 로그인 화면 로고, 모바일 분개 입력 줄의 입력칸이 회색 바탕에 묻히지 않게 */
+.login-logo{display:block;width:56px;height:56px;border-radius:16px;margin:0 auto 14px;box-shadow:0 0 0 1px var(--bd);}
+.login-card h2{text-align:center;}
+.portal .line-row select,.portal .line-row input{background:var(--surface);}

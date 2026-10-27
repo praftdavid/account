@@ -1,4 +1,5 @@
 import { supabase } from '../../lib/supabaseClient.js';
+import { trackHistory } from '../../lib/viewHistory.js';
 import { esc } from '../../lib/util.js';
 import { renderAttachmentsWidget, uploadAttachment, listAttachments, isPdfAttachment, getSignedUrl } from '../../lib/attachments.js';
 import { retentionDeadline } from '../lib/retention.js';
@@ -17,12 +18,29 @@ export function resetView() {
   currentRegId = null;
 }
 
+// 문서 > 전체 목록에서 규정을 누르면 규정 상세가 바로 열리게 한다.
+export function openRegulation(regId) {
+  mode = 'view';
+  currentRegId = regId;
+}
+
 function yearOf(reg) {
   const d = reg.effective_date ?? reg.created_at;
   return d ? Number(String(d).slice(0, 4)) : null;
 }
 
+// 뒤로가기(방문 기록)용: 지금 화면이 목록/작성/상세 중 무엇이고 어떤 항목인지.
+export function getPageState() {
+  return { mode, id: currentRegId };
+}
+
+export function setPageState(s) {
+  mode = s?.mode ?? 'list';
+  currentRegId = s?.id ?? null;
+}
+
 export async function renderRegulations(container) {
+  trackHistory();
   if (mode === 'list') return renderList(container);
   if (mode === 'new' || mode === 'edit') return renderForm(container);
   return renderDetail(container);

@@ -27,6 +27,8 @@ import { renderTaxReserves } from './pages/taxReserves.js';
 import { renderTaxCredits } from './pages/taxCredits.js';
 import { renderDashboard } from './pages/dashboard.js';
 import { esc } from './lib/util.js';
+import { renderAccountMenu } from './lib/accountMenu.js';
+import { initHistory, trackHistory } from './lib/viewHistory.js';
 
 // 메뉴 배치 원칙:
 //  1. 회계 데이터 흐름 순서 — 기초정보(설정) → 자동분개(입력 자동화) → 전표·장부(기록) →
@@ -136,14 +138,31 @@ async function render() {
     return;
   }
 
-  userbarEl.innerHTML = `<span>${esc(session.user.email)}</span><button class="btn ghost sm" id="logoutBtn">로그아웃</button>`;
-  document.getElementById('logoutBtn').onclick = () => supabase.auth.signOut();
+  renderAccountMenu(userbarEl, session.user.email, [
+    { label: '문서 포털 →', href: '/index.html' },
+    { label: '로그아웃', run: () => supabase.auth.signOut() },
+  ]);
 
+  trackHistory(); // 메뉴 이동을 방문 기록에 남겨 스와이프·뒤로가기로 이전 화면에 돌아가게 한다
   const curGroup = groupOf(cur) ?? GROUPS[0];
 
+  // 메뉴 줄을 다시 그리면 옆으로 밀어 둔 위치가 처음으로 돌아가므로, 위치를 기억했다가 되돌린다.
+  const prevGroupScroll = navEl.querySelector('.nav-groups')?.scrollLeft ?? 0;
   navEl.innerHTML = `
     <div class="nav-row nav-groups">${GROUPS.map(([k, label]) => `<button class="${k === curGroup[0] ? 'on' : ''}" data-group="${k}">${label}</button>`).join('')}</div>
-    ${curGroup[2].length > 1 ? `<div class="nav-row nav-items">${curGroup[2].map(([k, label]) => `<button class="${k === cur ? 'on' : ''}" data-view="${k}">${label}</button>`).join('')}</div>` : ''}`;
+    <div class="nav-row nav-items">${curGroup[2].length > 1 ? curGroup[2].map(([k, label]) => `<button class="${k === cur ? 'on' : ''}" data-view="${k}">${label}</button>`).join('') : ''}</div>`; // 하위 메뉴가 없어도 둘째 줄 자리는 비워 둔다(메뉴를 옮길 때 화면이 위아래로 흔들리지 않게)
+
+  const groupRow = navEl.querySelector('.nav-groups');
+  if (groupRow) groupRow.scrollLeft = prevGroupScroll;
+  // 선택된 메뉴가 화면 밖이면 보이는 곳까지만 밀어 준다.
+  navEl.querySelectorAll('.nav-row').forEach((row) => {
+    const on = row.querySelector('button.on');
+    if (!on) return;
+    const left = on.offsetLeft;
+    const right = left + on.offsetWidth;
+    if (left < row.scrollLeft) row.scrollLeft = Math.max(0, left - 8);
+    else if (right > row.scrollLeft + row.clientWidth) row.scrollLeft = right - row.clientWidth + 8;
+  });
 
   navEl.querySelectorAll('[data-group]').forEach((b) => {
     b.onclick = () => {
@@ -162,8 +181,14 @@ async function render() {
   }
 }
 
+const VIEW_KEYS = new Set(GROUPS.flatMap((g) => g[2].map((v) => v[0])));
 supabase.auth.getSession().then(({ data }) => {
   session = data.session;
+  initHistory({
+    getState: () => ({ view: cur, page: null }),
+    restore: (st) => { if (VIEW_KEYS.has(st?.view)) cur = st.view; },
+    apply: (st) => { if (VIEW_KEYS.has(st?.view)) { cur = st.view; render(); } },
+  });
   render();
 });
 

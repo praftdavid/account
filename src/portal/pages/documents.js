@@ -1,4 +1,5 @@
 import { supabase } from '../../lib/supabaseClient.js';
+import { trackHistory } from '../../lib/viewHistory.js';
 import { esc, todayStr } from '../../lib/util.js';
 import { renderAttachmentsWidget, uploadAttachment, listAttachments, deleteAttachment } from '../../lib/attachments.js';
 import { fetchDepartments } from '../lib/departments.js';
@@ -25,6 +26,17 @@ let yearFilter = 'all';
 
 export function resetView() {
   mode = 'list';
+  currentDocId = null;
+}
+
+// 홈에서 "결재 대기 문서"를 누르면 문서함 목록이 아니라 그 문서 상세가, "문서 작성"을 누르면 작성 화면이 바로 열리게 한다.
+export function openDocument(docId) {
+  mode = 'view';
+  currentDocId = docId;
+}
+
+export function openNewDocument() {
+  mode = 'new';
   currentDocId = null;
 }
 
@@ -56,7 +68,18 @@ function yearOf(dateStr) {
   return dateStr ? Number(String(dateStr).slice(0, 4)) : null;
 }
 
+// 뒤로가기(방문 기록)용: 지금 화면이 목록/작성/상세 중 무엇이고 어떤 항목인지.
+export function getPageState() {
+  return { mode, id: currentDocId };
+}
+
+export function setPageState(s) {
+  mode = s?.mode ?? 'list';
+  currentDocId = s?.id ?? null;
+}
+
 export async function renderDocuments(container) {
+  trackHistory();
   if (mode === 'list') return renderList(container);
   if (mode === 'new' || mode === 'edit') return renderForm(container);
   return renderDetail(container);
@@ -563,7 +586,7 @@ async function renderDetail(container) {
   if (sealBtn) {
     sealBtn.onclick = async () => {
       const seal = await fetchActiveSeal();
-      if (!seal) { alert('사용 중인 직인이 없습니다. [기초정보 > 직인관리]에서 직인을 등록하고 사용 지정해 주세요.'); return; }
+      if (!seal) { alert('사용 중인 직인이 없습니다. [설정 > 직인관리]에서 직인을 등록하고 사용 지정해 주세요.'); return; }
       if (!confirm(`"${seal.name}" 직인을 날인합니다. 날인 후에는 취소할 수 없고 날인기록부에 남습니다. 진행할까요?`)) return;
       sealBtn.disabled = true;
       try {
