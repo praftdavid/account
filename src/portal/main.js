@@ -1,19 +1,20 @@
 import { supabase } from '../lib/supabaseClient.js';
 import { renderLogin } from '../pages/login.js';
 import { renderDashboard } from './pages/dashboard.js';
-import { renderSchedules, resetView as resetSchedules } from './pages/schedules.js';
-import { renderTradeLog, resetView as resetTradeLog } from './pages/tradeLog.js';
+import { renderSchedules, resetView as resetSchedules, getPageState as schedulesState, setPageState as setSchedulesState } from './pages/schedules.js';
+import { renderTradeLog, resetView as resetTradeLog, getPageState as tradesState, setPageState as setTradesState } from './pages/tradeLog.js';
 import { renderAllDocuments } from './pages/documentsAll.js';
-import { renderDocuments, resetView as resetDocuments } from './pages/documents.js';
-import { renderRegulations, resetView as resetRegulations } from './pages/regulations.js';
-import { renderProjects, resetView as resetProjects } from './pages/projects.js';
-import { renderProjectArchive, resetView as resetProjectArchive } from './pages/projectArchive.js';
+import { renderDocuments, resetView as resetDocuments, getPageState as docsState, setPageState as setDocsState } from './pages/documents.js';
+import { renderRegulations, resetView as resetRegulations, getPageState as regsState, setPageState as setRegsState } from './pages/regulations.js';
+import { renderProjects, resetView as resetProjects, getPageState as projectsState, setPageState as setProjectsState } from './pages/projects.js';
+import { renderProjectArchive, resetView as resetProjectArchive, getPageState as archiveState, setPageState as setArchiveState } from './pages/projectArchive.js';
 import { renderDepartments } from './pages/departments.js';
-import { renderDocTemplates, resetView as resetDocTemplates } from './pages/docTemplatesPage.js';
+import { renderDocTemplates, resetView as resetDocTemplates, getPageState as templatesState, setPageState as setTemplatesState } from './pages/docTemplatesPage.js';
 import { renderSeals, renderSealLog } from './pages/seals.js';
 import { esc } from '../lib/util.js';
 import { renderAccountMenu } from '../lib/accountMenu.js';
 import { setRenderer, getCurrentView, setCurrentView } from './nav.js';
+import { initHistory, trackHistory } from '../lib/viewHistory.js';
 
 // 새 글 작성/수정 화면을 보다가 다른 탭으로 갔다 와도 항상 목록부터 보이도록, 실제 네비게이션
 // (nav 클릭)으로 들어올 때만 해당 화면을 목록 모드로 되돌린다 — 저장 후 상세로 넘어가는 등
@@ -68,6 +69,31 @@ const GROUPS = [
   ],
 ];
 
+// 뒤로가기(방문 기록)가 목록/작성/상세 상태를 되돌릴 수 있도록, 화면별 상태를 읽고 쓰는 함수를 모아 둔다.
+const PAGE_STATE = {
+  schedules: [schedulesState, setSchedulesState],
+  trades: [tradesState, setTradesState],
+  tradesTodo: [tradesState, setTradesState],
+  tradesDone: [tradesState, setTradesState],
+  docs: [docsState, setDocsState],
+  regs: [regsState, setRegsState],
+  projects: [projectsState, setProjectsState],
+  archive: [archiveState, setArchiveState],
+  templates: [templatesState, setTemplatesState],
+};
+const VIEW_KEYS = new Set(GROUPS.flatMap((g) => g[2].map((v) => v[0])));
+
+function currentState() {
+  const view = getCurrentView();
+  return { view, page: PAGE_STATE[view]?.[0]() ?? null };
+}
+
+function restoreState(s) {
+  if (!s || !VIEW_KEYS.has(s.view)) return;
+  setCurrentView(s.view);
+  PAGE_STATE[s.view]?.[1](s.page);
+}
+
 const navEl = document.getElementById('nav');
 const mainEl = document.getElementById('main');
 const userbarEl = document.getElementById('userbar');
@@ -104,6 +130,7 @@ async function render() {
     { label: '로그아웃', run: () => supabase.auth.signOut() },
   ]);
 
+  trackHistory(); // 탭만 바뀌고 화면 상태가 없는 화면(홈·설정 등)도 방문 기록에 남긴다
   const cur = getCurrentView();
   const curGroup = groupOf(cur) ?? GROUPS[0];
 
@@ -132,6 +159,7 @@ setRenderer(render);
 
 supabase.auth.getSession().then(({ data }) => {
   session = data.session;
+  initHistory({ getState: currentState, restore: restoreState, apply: (st) => { restoreState(st); render(); } });
   render();
 });
 

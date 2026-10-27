@@ -1,4 +1,5 @@
 import { supabase } from '../../lib/supabaseClient.js';
+import { trackHistory } from '../../lib/viewHistory.js';
 import { esc } from '../../lib/util.js';
 import { renderAttachmentsWidget, uploadAttachment, listAttachments, isPdfAttachment, getSignedUrl } from '../../lib/attachments.js';
 import { retentionDeadline } from '../lib/retention.js';
@@ -28,7 +29,18 @@ function yearOf(reg) {
   return d ? Number(String(d).slice(0, 4)) : null;
 }
 
+// 뒤로가기(방문 기록)용: 지금 화면이 목록/작성/상세 중 무엇이고 어떤 항목인지.
+export function getPageState() {
+  return { mode, id: currentRegId };
+}
+
+export function setPageState(s) {
+  mode = s?.mode ?? 'list';
+  currentRegId = s?.id ?? null;
+}
+
 export async function renderRegulations(container) {
+  trackHistory();
   if (mode === 'list') return renderList(container);
   if (mode === 'new' || mode === 'edit') return renderForm(container);
   return renderDetail(container);

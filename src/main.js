@@ -28,6 +28,7 @@ import { renderTaxCredits } from './pages/taxCredits.js';
 import { renderDashboard } from './pages/dashboard.js';
 import { esc } from './lib/util.js';
 import { renderAccountMenu } from './lib/accountMenu.js';
+import { initHistory, trackHistory } from './lib/viewHistory.js';
 
 // 메뉴 배치 원칙:
 //  1. 회계 데이터 흐름 순서 — 기초정보(설정) → 자동분개(입력 자동화) → 전표·장부(기록) →
@@ -142,6 +143,7 @@ async function render() {
     { label: '로그아웃', run: () => supabase.auth.signOut() },
   ]);
 
+  trackHistory(); // 메뉴 이동을 방문 기록에 남겨 스와이프·뒤로가기로 이전 화면에 돌아가게 한다
   const curGroup = groupOf(cur) ?? GROUPS[0];
 
   // 메뉴 줄을 다시 그리면 옆으로 밀어 둔 위치가 처음으로 돌아가므로, 위치를 기억했다가 되돌린다.
@@ -179,8 +181,14 @@ async function render() {
   }
 }
 
+const VIEW_KEYS = new Set(GROUPS.flatMap((g) => g[2].map((v) => v[0])));
 supabase.auth.getSession().then(({ data }) => {
   session = data.session;
+  initHistory({
+    getState: () => ({ view: cur, page: null }),
+    restore: (st) => { if (VIEW_KEYS.has(st?.view)) cur = st.view; },
+    apply: (st) => { if (VIEW_KEYS.has(st?.view)) { cur = st.view; render(); } },
+  });
   render();
 });
 

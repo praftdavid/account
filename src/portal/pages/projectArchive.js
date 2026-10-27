@@ -1,4 +1,5 @@
 import { supabase } from '../../lib/supabaseClient.js';
+import { trackHistory } from '../../lib/viewHistory.js';
 import { esc } from '../../lib/util.js';
 import { fetchDepartments } from '../lib/departments.js';
 import { renderProjectDetailView } from './projects.js';
@@ -21,7 +22,18 @@ function yearOf(dateStr) {
   return dateStr ? Number(String(dateStr).slice(0, 4)) : null;
 }
 
+// 뒤로가기(방문 기록)용: 지금 화면이 목록/작성/상세 중 무엇이고 어떤 항목인지.
+export function getPageState() {
+  return { mode, id: currentProjectId };
+}
+
+export function setPageState(s) {
+  mode = s?.mode ?? 'list';
+  currentProjectId = s?.id ?? null;
+}
+
 export async function renderProjectArchive(container) {
+  trackHistory();
   const departments = await fetchDepartments({ activeOnly: true });
   if (departments.length === 0) {
     container.innerHTML = '<div class="card"><p class="note">등록된 부서가 없습니다.</p></div>';

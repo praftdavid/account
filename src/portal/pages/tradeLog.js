@@ -1,4 +1,5 @@
 import { supabase } from '../../lib/supabaseClient.js';
+import { trackHistory } from '../../lib/viewHistory.js';
 import { esc, todayStr, fmt, wireThousandsInput, parseThousands } from '../../lib/util.js';
 import { renderAttachmentsWidget, uploadAttachment, listAttachments, deleteAttachment } from '../../lib/attachments.js';
 import { TRADE_REASON_CATEGORIES } from '../lib/tradeReasons.js';
@@ -45,7 +46,18 @@ function yearOf(dateStr) {
 }
 
 // review: 메뉴 탭(전체/복기 필요/복기 완료)에서 넘어오는 값. 목록 안에서 필터를 바꿔 다시 그릴 때는 생략돼 이전 값을 유지한다.
+// 뒤로가기(방문 기록)용: 지금 화면이 목록/작성/상세 중 무엇이고 어떤 항목인지.
+export function getPageState() {
+  return { mode, id: currentTradeId };
+}
+
+export function setPageState(s) {
+  mode = s?.mode ?? 'list';
+  currentTradeId = s?.id ?? null;
+}
+
 export async function renderTradeLog(container, review) {
+  trackHistory();
   if (review) reviewFilter = review;
   if (mode === 'list') return renderList(container);
   if (mode === 'new' || mode === 'edit') return renderForm(container);

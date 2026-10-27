@@ -1,4 +1,5 @@
 import { supabase } from '../../lib/supabaseClient.js';
+import { trackHistory } from '../../lib/viewHistory.js';
 import { esc } from '../../lib/util.js';
 import { DOC_TYPES } from '../lib/letterhead.js';
 import { fetchTemplates } from '../lib/docTemplates.js';
@@ -16,7 +17,18 @@ export function resetView() {
 
 const TEXTAREA_STYLE = 'width:100%;padding:10px 12px;border:1px solid transparent;background:var(--bg);border-radius:var(--radius-sm);font-family:inherit;font-size:13px;resize:vertical;line-height:1.6';
 
+// 뒤로가기(방문 기록)용: 지금 화면이 목록/작성/상세 중 무엇이고 어떤 항목인지.
+export function getPageState() {
+  return { mode, id: editingId };
+}
+
+export function setPageState(s) {
+  mode = s?.mode ?? 'list';
+  editingId = s?.id ?? null;
+}
+
 export async function renderDocTemplates(container) {
+  trackHistory();
   if (mode === 'form') return renderForm(container);
   return renderList(container);
 }

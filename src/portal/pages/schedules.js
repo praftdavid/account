@@ -1,4 +1,5 @@
 import { supabase } from '../../lib/supabaseClient.js';
+import { trackHistory } from '../../lib/viewHistory.js';
 import { esc, todayStr } from '../../lib/util.js';
 import { SCHEDULE_CATEGORIES, DISPLAY_CATEGORIES, CATEGORY_DOT_COLOR } from '../lib/scheduleCategories.js';
 import { openProject } from './projects.js';
@@ -76,7 +77,18 @@ export async function fetchProjectDeadlines() {
   }));
 }
 
+// 뒤로가기(방문 기록)용: 지금 화면이 목록/작성/상세 중 무엇이고 어떤 항목인지.
+export function getPageState() {
+  return { mode, id: currentScheduleId };
+}
+
+export function setPageState(s) {
+  mode = s?.mode ?? 'list';
+  currentScheduleId = s?.id ?? null;
+}
+
 export async function renderSchedules(container) {
+  trackHistory();
   if (mode === 'list') return renderList(container);
   return renderForm(container);
 }
