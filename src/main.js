@@ -31,7 +31,8 @@ import { renderAccountMenu } from './lib/accountMenu.js';
 import { initHistory, trackHistory } from './lib/viewHistory.js';
 
 // 메뉴 배치 원칙:
-//  1. 회계 데이터 흐름 순서 — 기초정보(설정) → 자동분개(입력 자동화) → 전표·장부(기록) →
+// 설정(계정과목·계좌 관리)은 메뉴 줄에 두지 않고 문서 포털처럼 오른쪽 위 계정 메뉴로만 들어간다(둘째 줄 탭 없음).
+//  1. 회계 데이터 흐름 순서 — 설정 → 자동분개(입력 자동화) → 전표·장부(기록) →
 //     재무제표(보고) → 법인세(신고). 상류에서 하류로 흘러가는 순서 그대로 배치한다.
 //  2. 범용 사이클 vs 도메인 특화 모듈 분리 — 위 5개 그룹은 어떤 사업이든 공통인 "범용 회계 사이클"이고,
 //     "증권관리"는 이 회사 투자 부문 전용 분석 모듈(향후 수익률분석·리밸런싱까지 확장 예정)이라 성격이
@@ -51,7 +52,7 @@ const GROUPS = [
   ],
   [
     'base',
-    '기초정보',
+    '설정',
     [
       ['accounts', '계정과목', renderAccounts],
       ['finAccounts', '계좌 관리', renderFinancialAccounts],
@@ -138,7 +139,11 @@ async function render() {
     return;
   }
 
+  const settingsItems = GROUPS.find((g) => g[0] === 'base')[2];
   renderAccountMenu(userbarEl, session.user.email, [
+    { heading: '설정' },
+    ...settingsItems.map(([k, label]) => ({ label, run: () => go(k) })),
+    { divider: true },
     { label: '문서 포털 →', href: '/index.html' },
     { label: '로그아웃', run: () => supabase.auth.signOut() },
   ]);
@@ -149,8 +154,8 @@ async function render() {
   // 메뉴 줄을 다시 그리면 옆으로 밀어 둔 위치가 처음으로 돌아가므로, 위치를 기억했다가 되돌린다.
   const prevGroupScroll = navEl.querySelector('.nav-groups')?.scrollLeft ?? 0;
   navEl.innerHTML = `
-    <div class="nav-row nav-groups">${GROUPS.map(([k, label]) => `<button class="${k === curGroup[0] ? 'on' : ''}" data-group="${k}">${label}</button>`).join('')}</div>
-    <div class="nav-row nav-items">${curGroup[2].length > 1 ? curGroup[2].map(([k, label]) => `<button class="${k === cur ? 'on' : ''}" data-view="${k}">${label}</button>`).join('') : ''}</div>`; // 하위 메뉴가 없어도 둘째 줄 자리는 비워 둔다(메뉴를 옮길 때 화면이 위아래로 흔들리지 않게)
+    <div class="nav-row nav-groups">${GROUPS.filter(([k]) => k !== 'base').map(([k, label]) => `<button class="${k === curGroup[0] ? 'on' : ''}" data-group="${k}">${label}</button>`).join('')}</div>
+    <div class="nav-row nav-items">${curGroup[2].length > 1 && curGroup[0] !== 'base' ? curGroup[2].map(([k, label]) => `<button class="${k === cur ? 'on' : ''}" data-view="${k}">${label}</button>`).join('') : ''}</div>`; // 하위 메뉴가 없어도 둘째 줄 자리는 비워 둔다(메뉴를 옮길 때 화면이 위아래로 흔들리지 않게)
 
   const groupRow = navEl.querySelector('.nav-groups');
   if (groupRow) groupRow.scrollLeft = prevGroupScroll;
