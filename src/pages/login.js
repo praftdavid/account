@@ -4,6 +4,7 @@ export function renderLogin(container) {
   container.innerHTML = `
   <div class="login-wrap">
     <div class="login-card">
+      <img class="login-logo" src="/logo-mark.png" alt="PRAFT">
       <h2>로그인</h2>
       <form id="loginForm">
         <label>이메일</label>

@@ -285,3 +285,8 @@ select.acct{min-width:180px;}
 
 /* 둘째 줄(하위 메뉴) 자리는 항상 확보한다 — 하위 메뉴가 없는 메뉴로 옮겨도 화면이 위아래로 흔들리지 않게 */
 .portal nav .nav-items{min-height:44px;}
+
+/* 로그인 화면 로고, 모바일 분개 입력 줄의 입력칸이 회색 바탕에 묻히지 않게 */
+.login-logo{display:block;width:56px;height:56px;border-radius:16px;margin:0 auto 14px;box-shadow:0 0 0 1px var(--bd);}
+.login-card h2{text-align:center;}
+.portal .line-row select,.portal .line-row input{background:var(--surface);}
