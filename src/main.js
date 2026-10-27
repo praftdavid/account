@@ -150,7 +150,7 @@ async function render() {
   const prevGroupScroll = navEl.querySelector('.nav-groups')?.scrollLeft ?? 0;
   navEl.innerHTML = `
     <div class="nav-row nav-groups">${GROUPS.map(([k, label]) => `<button class="${k === curGroup[0] ? 'on' : ''}" data-group="${k}">${label}</button>`).join('')}</div>
-    ${curGroup[2].length > 1 ? `<div class="nav-row nav-items">${curGroup[2].map(([k, label]) => `<button class="${k === cur ? 'on' : ''}" data-view="${k}">${label}</button>`).join('')}</div>` : ''}`;
+    <div class="nav-row nav-items">${curGroup[2].length > 1 ? curGroup[2].map(([k, label]) => `<button class="${k === cur ? 'on' : ''}" data-view="${k}">${label}</button>`).join('') : ''}</div>`; // 하위 메뉴가 없어도 둘째 줄 자리는 비워 둔다(메뉴를 옮길 때 화면이 위아래로 흔들리지 않게)
 
   const groupRow = navEl.querySelector('.nav-groups');
   if (groupRow) groupRow.scrollLeft = prevGroupScroll;

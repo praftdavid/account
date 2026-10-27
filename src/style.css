@@ -282,3 +282,6 @@ select.acct{min-width:180px;}
   .portal nav .nav-row:not(.compact)::-webkit-scrollbar{display:none;}
   .portal nav .nav-row:not(.compact) button{flex:none;white-space:nowrap;}
 }
+
+/* 둘째 줄(하위 메뉴) 자리는 항상 확보한다 — 하위 메뉴가 없는 메뉴로 옮겨도 화면이 위아래로 흔들리지 않게 */
+.portal nav .nav-items{min-height:44px;}
