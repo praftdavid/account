@@ -4,7 +4,7 @@
 
 | 앱 | 용도 | 접속 |
 |---|---|---|
-| **문서포털** (기본 화면) | 전자결재, 일정, 매매일지, 프로젝트, 제규정 등 업무 문서·기록 | `https://praft-accounting.vercel.app/` |
+| **문서포털** (기본 화면) | 전자결재, 일정, 매매일지, 프로젝트, 제규정 등 업무 문서·기록 | `https://praft.vercel.app/` |
 | **관리회계 시스템** | 복식부기 장부, 재무제표, 법인세, 증권 분개 | `/portal.html` 또는 `/accounting` |
 
 > 이 문서는 "지금 구조가 어떻게 생겼는지"를 설명한다. 어떤 순서로, 왜 그렇게 만들어졌는지는 [PROJECT_HISTORY.md](PROJECT_HISTORY.md), 버전별 변경은 [CHANGELOG.md](CHANGELOG.md), 버전 규칙은 [VERSIONING.md](VERSIONING.md)를 본다.
